@@ -3,15 +3,18 @@ import { TripsLayer } from '@deck.gl/geo-layers';
 import { ScatterplotLayer, TextLayer } from '@deck.gl/layers';
 
 import { COLONIES, PLACE_LABELS } from '../data/geo';
-import { GENERATIONS } from '../data/generations';
+import { GENERATIONS, tint } from '../data/generations';
 import type { Frame, Model, Ring, Trip } from '../data/model';
 
-/** Additive blending: overlapping trails and swarms add up into a glow. */
-const ADDITIVE = {
+/**
+ * Plain alpha blending: overlaps deepen toward the butterflies' own color
+ * instead of adding up to white.
+ */
+const BLEND = {
   blend: true,
   blendColorOperation: 'add',
   blendColorSrcFactor: 'src-alpha',
-  blendColorDstFactor: 'one',
+  blendColorDstFactor: 'one-minus-src-alpha',
   blendAlphaOperation: 'add',
   blendAlphaSrcFactor: 'one',
   blendAlphaDstFactor: 'one-minus-src-alpha',
@@ -23,9 +26,10 @@ const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
 
 const TRAIL_STYLES = [
   // Faint long memory of the routes, so the shape of the flyway builds up.
-  { id: 'routes-memory', trailLength: 45, opacity: 0.05, width: 1, rounded: false },
-  // Bright comet tails.
-  { id: 'trails', trailLength: 6, opacity: 0.3, width: 1.5, rounded: true },
+  // Kept very low: hundreds of paths overlap in the corridor.
+  { id: 'routes-memory', trailLength: 12, opacity: 0.03, width: 1, rounded: false },
+  // Comet tails.
+  { id: 'trails', trailLength: 4, opacity: 0.22, width: 1.5, rounded: true },
 ];
 
 // One layer per bucket and style. Out-of-window buckets stay mounted with
@@ -40,7 +44,7 @@ function tripLayers(model: Model, day: number): Layer[] {
           visible: day >= bucket.from && day <= bucket.to + style.trailLength,
           getPath: (d) => d.path,
           getTimestamps: (d) => d.timestamps,
-          getColor: (d) => GENERATIONS[d.gen].color,
+          getColor: (d) => tint(GENERATIONS[d.gen].color, d.lineage),
           widthUnits: 'pixels',
           getWidth: style.width,
           capRounded: style.rounded,
@@ -49,7 +53,7 @@ function tripLayers(model: Model, day: number): Layer[] {
           trailLength: style.trailLength,
           fadeTrail: true,
           currentTime: day,
-          parameters: ADDITIVE,
+          parameters: BLEND,
         }),
     ),
   );
@@ -100,7 +104,7 @@ export function buildLayers({ model, frame, day, zoom }: LayerInput): Layer[] {
       filled: false,
       lineWidthUnits: 'pixels',
       getLineWidth: 1,
-      parameters: ADDITIVE,
+      parameters: BLEND,
     }),
 
     new ScatterplotLayer({
@@ -108,7 +112,7 @@ export function buildLayers({ model, frame, day, zoom }: LayerInput): Layer[] {
       data: points,
       radiusUnits: 'pixels',
       opacity: 1,
-      parameters: ADDITIVE,
+      parameters: BLEND,
     }),
 
     new TextLayer({

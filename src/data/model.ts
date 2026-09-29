@@ -1,5 +1,5 @@
 import { COLONIES, FLYWAY, ZONES, type LngLat, type Zone } from './geo';
-import { EGG_COLOR, GENERATIONS, type Generation, type RGB } from './generations';
+import { GENERATIONS, metamorphosisColor, tint, type Generation, type RGB } from './generations';
 
 /**
  * Synthetic migration model.
@@ -206,14 +206,17 @@ export function buildModel(count = 2200, seed = 1102): Model {
 type State =
   | { kind: 'rest' }
   | { kind: 'fly'; trip: Trip }
-  | { kind: 'egg'; at: LngLat };
+  | { kind: 'egg'; at: LngLat; since: number; until: number; prevGen: Generation };
 
 function stateAt(lineage: Lineage, t: number): State {
   const { trips } = lineage;
   if (t < trips[0].start || t >= trips[trips.length - 1].end) return { kind: 'rest' };
   for (let i = 0; i < trips.length; i++) {
     const trip = trips[i];
-    if (t < trip.start) return { kind: 'egg', at: trips[i - 1].path[trips[i - 1].path.length - 1] };
+    if (t < trip.start) {
+      const prev = trips[i - 1];
+      return { kind: 'egg', at: prev.path[prev.path.length - 1], since: prev.end, until: trip.start, prevGen: prev.gen };
+    }
     if (t < trip.end) return { kind: 'fly', trip };
   }
   return { kind: 'rest' };
@@ -274,15 +277,47 @@ export interface Frame {
 
 export const RING_DAYS = 3;
 
+// Each mother lays her eggs one per plant across a patch of milkweed. A handful
+// of specks stands in for the hundreds she really lays.
+const CLUTCH = 6;
+const CLUTCH_SPREAD = 0.6;
+const LAYING_DAYS = 4;
+
+const unit = (x: number) => {
+  const v = Math.sin(x) * 43758.5453;
+  return v - Math.floor(v);
+};
+
+/** Where the `k`-th egg of lineage `i` goes. Egg 0 sits right where the mother landed: it's the one that becomes the next generation. */
+function eggSpot(at: LngLat, i: number, k: number): LngLat {
+  if (k === 0) return at;
+  const angle = unit(i * 12.9898 + k * 78.233) * Math.PI * 2;
+  const r = CLUTCH_SPREAD * Math.sqrt(unit(i * 39.346 + k * 11.135));
+  return [at[0] + Math.cos(angle) * r, at[1] + Math.sin(angle) * r * 0.75];
+}
+
 /**
- * Every lineage's position at day `t`. `clock` is wall time in seconds, used for the flutter.
+ * Every lineage's position at day `t`, followed by the eggs of lineages that
+ * are between generations. `clock` is wall time in seconds, used for the flutter.
  * Buffers are fresh each call: deck.gl skips the upload when it gets the same typed array back.
  */
 export function computeFrame(model: Model, t: number, clock: number): Frame {
   const n = model.lineages.length;
-  const positions = new Float32Array(n * 2);
-  const colors = new Uint8Array(n * 4);
-  const radii = new Float32Array(n);
+  const capacity = n * (1 + CLUTCH);
+  const positions = new Float32Array(capacity * 2);
+  const colors = new Uint8Array(capacity * 4);
+  const radii = new Float32Array(capacity);
+  let length = n;
+
+  const write = (j: number, pos: LngLat, color: RGB, alpha: number, radius: number) => {
+    positions[j * 2] = pos[0];
+    positions[j * 2 + 1] = pos[1];
+    colors[j * 4] = color[0];
+    colors[j * 4 + 1] = color[1];
+    colors[j * 4 + 2] = color[2];
+    colors[j * 4 + 3] = alpha;
+    radii[j] = radius;
+  };
   const rings: Ring[] = [];
   let flying = 0;
   let eggs = 0;
@@ -298,19 +333,28 @@ export function computeFrame(model: Model, t: number, clock: number): Frame {
     if (s.kind === 'fly') {
       pos = positionOnTrip(s.trip, t);
       color = GENERATIONS[s.trip.gen].color;
-      alpha = 175;
+      alpha = 190;
       radius = 2.2;
       flying++;
       const age = t - s.trip.start;
       if (age < RING_DAYS && s.trip !== lineage.trips[0]) {
-        rings.push({ position: s.trip.path[0], progress: age / RING_DAYS, color });
+        rings.push({ position: s.trip.path[0], progress: age / RING_DAYS, color: GENERATIONS[s.trip.gen].color });
       }
     } else if (s.kind === 'egg') {
-      pos = s.at;
-      color = EGG_COLOR;
-      alpha = 110;
-      radius = 1.3;
       eggs++;
+      const age = t - s.since;
+      const stage = age / (s.until - s.since);
+      const laid = Math.min(CLUTCH, Math.floor((age / LAYING_DAYS) * CLUTCH) + 1);
+      for (let k = 0; k < laid; k++) {
+        // Most eggs and caterpillars don't make it; only egg 0 carries the lineage on.
+        const survival = k === 0 ? 1 : Math.max(0, 1 - stage / 0.9);
+        write(length++, eggSpot(s.at, i, k), metamorphosisColor(stage), Math.round(150 * survival), 1.3);
+      }
+      // The mother fades out where she landed as she lays: she dies after this.
+      pos = s.at;
+      color = GENERATIONS[s.prevGen].color;
+      alpha = Math.round(190 * Math.max(0, 1 - age / LAYING_DAYS));
+      radius = 2.2;
     } else {
       const w = clock * 2.3 + lineage.phase;
       pos = [lineage.home[0] + Math.cos(w) * 0.012, lineage.home[1] + Math.sin(w * 1.37) * 0.009];
@@ -320,14 +364,20 @@ export function computeFrame(model: Model, t: number, clock: number): Frame {
       resting++;
     }
 
-    positions[i * 2] = pos[0];
-    positions[i * 2 + 1] = pos[1];
-    colors[i * 4] = color[0];
-    colors[i * 4 + 1] = color[1];
-    colors[i * 4 + 2] = color[2];
-    colors[i * 4 + 3] = alpha;
-    radii[i] = radius;
+    write(i, pos, tint(color, i), alpha, radius);
   });
 
-  return { length: n, positions, colors, radii, rings, flying, eggs, resting };
+  return { length, positions, colors, radii, rings, flying, eggs, resting };
+}
+
+/** Where eggs and caterpillars are on day `t`, one point per lineage between generations. */
+export function breedingGrounds(model: Model, t: number) {
+  const features = [];
+  for (const lineage of model.lineages) {
+    const s = stateAt(lineage, t);
+    if (s.kind === 'egg') {
+      features.push({ type: 'Feature' as const, properties: {}, geometry: { type: 'Point' as const, coordinates: s.at } });
+    }
+  }
+  return { type: 'FeatureCollection' as const, features };
 }

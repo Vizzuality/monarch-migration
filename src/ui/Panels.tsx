@@ -66,7 +66,7 @@ export function Legend({ follow, onFollow }: { follow: boolean; onFollow: () => 
           <i className="small" style={{ background: `rgb(${EGG_COLOR})`, boxShadow: `0 0 8px rgb(${EGG_COLOR})` }} />
           <div>
             <strong>Huevo → oruga → crisálida</strong>
-            <p>Unas 4 semanas sobre algodoncillo. Cada anillo es una nueva eclosión.</p>
+            <p>Unas 4 semanas sobre algodoncillo, de huevo crema a oruga y a crisálida jade. La bruma verde marca dónde crían; cada anillo, una eclosión.</p>
           </div>
         </li>
       </ul>

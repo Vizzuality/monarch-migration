@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import Map, { type ViewStateChangeEvent } from 'react-map-gl/maplibre';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import Map, { Layer, Source, type ViewStateChangeEvent } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import './map/maplibre-worker';
 
-import { buildModel, computeFrame, YEAR_DAYS } from './data/model';
-import { MAP_STYLE } from './map/basemaps';
+import { breedingGrounds, buildModel, computeFrame, YEAR_DAYS } from './data/model';
+import { BREEDING_HEATMAP, MAP_STYLE } from './map/basemaps';
 import { cameraAt, type Camera } from './map/camera';
 import { DeckOverlay } from './map/DeckOverlay';
 import { buildLayers } from './map/layers';
@@ -101,6 +101,10 @@ export default function App() {
     setFollow(true);
   };
 
+  // MapLibre reparses GeoJSON on a worker, so refresh the breeding grounds once per day, not per frame.
+  const today = Math.floor(day);
+  const breeding = useMemo(() => breedingGrounds(model, today + 0.5), [today]);
+
   const frame = computeFrame(model, day, clock);
   const layers = buildLayers({ model, frame, day, zoom: camera.zoom });
 
@@ -115,6 +119,9 @@ export default function App() {
         attributionControl={{ compact: true }}
         style={{ position: 'absolute', inset: 0 }}
       >
+        <Source id="breeding" type="geojson" data={breeding}>
+          <Layer id="breeding-heatmap" type="heatmap" paint={BREEDING_HEATMAP} />
+        </Source>
         <DeckOverlay layers={layers} />
       </Map>
       <div className="vignette" />
