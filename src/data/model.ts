@@ -267,7 +267,6 @@ export interface Frame {
   colors: Uint8Array;
   radii: Float32Array;
   rings: Ring[];
-  colonyCounts: number[];
   flying: number;
   eggs: number;
   resting: number;
@@ -285,7 +284,6 @@ export function computeFrame(model: Model, t: number, clock: number): Frame {
   const colors = new Uint8Array(n * 4);
   const radii = new Float32Array(n);
   const rings: Ring[] = [];
-  const colonyCounts = COLONIES.map(() => 0);
   let flying = 0;
   let eggs = 0;
   let resting = 0;
@@ -320,7 +318,6 @@ export function computeFrame(model: Model, t: number, clock: number): Frame {
       alpha = 105;
       radius = 1.5;
       resting++;
-      colonyCounts[lineage.colony]++;
     }
 
     positions[i * 2] = pos[0];
@@ -332,5 +329,5 @@ export function computeFrame(model: Model, t: number, clock: number): Frame {
     radii[i] = radius;
   });
 
-  return { length: n, positions, colors, radii, rings, colonyCounts, flying, eggs, resting };
+  return { length: n, positions, colors, radii, rings, flying, eggs, resting };
 }

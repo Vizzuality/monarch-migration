@@ -103,7 +103,7 @@ export default function App() {
   };
 
   const frame = computeFrame(model, day, clock);
-  const layers = buildLayers({ model, frame, day, clock, zoom: camera.zoom });
+  const layers = buildLayers({ model, frame, day, zoom: camera.zoom });
 
   return (
     <div className="app">

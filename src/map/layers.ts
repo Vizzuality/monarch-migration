@@ -59,11 +59,10 @@ interface LayerInput {
   model: Model;
   frame: Frame;
   day: number;
-  clock: number;
   zoom: number;
 }
 
-export function buildLayers({ model, frame, day, clock, zoom }: LayerInput): Layer[] {
+export function buildLayers({ model, frame, day, zoom }: LayerInput): Layer[] {
   const points = {
     length: frame.length,
     attributes: {
@@ -74,8 +73,6 @@ export function buildLayers({ model, frame, day, clock, zoom }: LayerInput): Lay
   };
 
   const closeUp = clamp01((zoom - 6.2) / 1.2);
-  const pulse = 0.5 + 0.5 * Math.sin(clock * 1.6);
-  const maxColony = Math.max(1, ...frame.colonyCounts);
 
   return [
     new TextLayer({
@@ -93,19 +90,6 @@ export function buildLayers({ model, frame, day, clock, zoom }: LayerInput): Lay
 
     ...tripLayers(model, day),
 
-    new ScatterplotLayer<{ position: [number, number]; count: number }>({
-      id: 'colony-glow',
-      data: COLONIES.map((c, i) => ({ position: c.position, count: frame.colonyCounts[i] })),
-      getPosition: (d) => d.position,
-      getRadius: (d) => (4000 + 16000 * Math.sqrt(d.count / maxColony)) * (0.9 + 0.2 * pulse),
-      getFillColor: (d) => [255, 120, 30, d.count > 0 ? 70 : 0],
-      radiusMinPixels: 0,
-      radiusMaxPixels: 60,
-      opacity: 0.6,
-      parameters: ADDITIVE,
-      updateTriggers: { getRadius: [pulse, maxColony], getFillColor: frame.colonyCounts.join() },
-    }),
-
     new ScatterplotLayer<Ring>({
       id: 'emergence-rings',
       data: frame.rings,
@@ -116,15 +100,6 @@ export function buildLayers({ model, frame, day, clock, zoom }: LayerInput): Lay
       filled: false,
       lineWidthUnits: 'pixels',
       getLineWidth: 1,
-      parameters: ADDITIVE,
-    }),
-
-    new ScatterplotLayer({
-      id: 'butterfly-halo',
-      data: points,
-      radiusUnits: 'pixels',
-      radiusScale: 2.8,
-      opacity: 0.09,
       parameters: ADDITIVE,
     }),
 
