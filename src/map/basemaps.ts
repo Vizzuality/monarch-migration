@@ -31,7 +31,7 @@ export const MAP_STYLE: StyleSpecification = {
       paint: { 'raster-brightness-max': 0.7, 'raster-saturation': -0.25 },
     },
   ],
-  terrain: { source: 'terrain-dem', exaggeration: 3 },
+  terrain: { source: 'terrain-dem', exaggeration: 6 },
 };
 
 /** A soft milkweed-green haze over wherever eggs and caterpillars are. */
