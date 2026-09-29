@@ -29,7 +29,32 @@ const KEYFRAMES = [
   k(YEAR_DAYS, -100.16, 19.62, 8.2, 58, -28),
 ];
 
-const ease = (x: number) => x * x * (3 - 2 * x);
+const CHANNELS = ['longitude', 'latitude', 'zoom', 'pitch', 'bearing'] as const;
+
+// Monotone cubic (PCHIP) tangents, wrapped around the year. A per-segment ease
+// brings the camera to a full stop at every keyframe; these keep it gliding
+// through them and only settle where a channel turns around, without overshoot.
+const LOOP = KEYFRAMES.slice(0, -1);
+const TANGENTS = LOOP.map((_, i) => {
+  const n = LOOP.length;
+  const prev = LOOP[(i - 1 + n) % n];
+  const cur = LOOP[i];
+  const next = LOOP[(i + 1) % n];
+  const h0 = (cur.day - prev.day + YEAR_DAYS) % YEAR_DAYS;
+  const h1 = (next.day - cur.day + YEAR_DAYS) % YEAR_DAYS || YEAR_DAYS;
+  const out = {} as Camera;
+  for (const key of CHANNELS) {
+    const d0 = (cur.camera[key] - prev.camera[key]) / h0;
+    const d1 = (next.camera[key] - cur.camera[key]) / h1;
+    if (d0 * d1 <= 0) out[key] = 0;
+    else {
+      const w0 = 2 * h1 + h0;
+      const w1 = h1 + 2 * h0;
+      out[key] = (w0 + w1) / (w0 / d0 + w1 / d1);
+    }
+  }
+  return out;
+});
 
 export function cameraAt(day: number): Camera {
   const d = ((day % YEAR_DAYS) + YEAR_DAYS) % YEAR_DAYS;
@@ -37,13 +62,19 @@ export function cameraAt(day: number): Camera {
   while (i < KEYFRAMES.length - 2 && KEYFRAMES[i + 1].day <= d) i++;
   const a = KEYFRAMES[i];
   const b = KEYFRAMES[i + 1];
-  const u = ease((d - a.day) / (b.day - a.day));
-  const lerp = (key: keyof Camera) => a.camera[key] + (b.camera[key] - a.camera[key]) * u;
-  return {
-    longitude: lerp('longitude'),
-    latitude: lerp('latitude'),
-    zoom: lerp('zoom'),
-    pitch: lerp('pitch'),
-    bearing: lerp('bearing'),
-  };
+  const ta = TANGENTS[i % LOOP.length];
+  const tb = TANGENTS[(i + 1) % LOOP.length];
+  const h = b.day - a.day;
+  const u = (d - a.day) / h;
+  const u2 = u * u;
+  const u3 = u2 * u;
+  const out = {} as Camera;
+  for (const key of CHANNELS) {
+    out[key] =
+      (2 * u3 - 3 * u2 + 1) * a.camera[key] +
+      (u3 - 2 * u2 + u) * h * ta[key] +
+      (-2 * u3 + 3 * u2) * b.camera[key] +
+      (u3 - u2) * h * tb[key];
+  }
+  return out;
 }
