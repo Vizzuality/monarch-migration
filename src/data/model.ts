@@ -222,7 +222,7 @@ export function buildModel(count = 800, seed = 1102): Model {
 type State =
   | { kind: 'rest' }
   | { kind: 'fly'; trip: Trip }
-  | { kind: 'egg'; at: LngLat; since: number; until: number; prevGen: Generation };
+  | { kind: 'egg'; at: LngLat; since: number; until: number; prevGen: Generation; nextGen: Generation };
 
 function stateAt(lineage: Lineage, t: number): State {
   const { trips } = lineage;
@@ -231,7 +231,7 @@ function stateAt(lineage: Lineage, t: number): State {
     const trip = trips[i];
     if (t < trip.start) {
       const prev = trips[i - 1];
-      return { kind: 'egg', at: prev.path[prev.path.length - 1], since: prev.end, until: trip.start, prevGen: prev.gen };
+      return { kind: 'egg', at: prev.path[prev.path.length - 1], since: prev.end, until: trip.start, prevGen: prev.gen, nextGen: trip.gen };
     }
     if (t < trip.end) return { kind: 'fly', trip };
   }
@@ -361,10 +361,12 @@ export function computeFrame(model: Model, t: number, clock: number): Frame {
       const age = t - s.since;
       const stage = age / (s.until - s.since);
       const laid = Math.min(CLUTCH, Math.floor((age / LAYING_DAYS) * CLUTCH) + 1);
+      // Tinted like the butterfly it turns into, so the hatch has no color jump.
+      const adult = tint(GENERATIONS[s.nextGen].color, i);
       for (let k = 0; k < laid; k++) {
         // Most eggs and caterpillars don't make it; only egg 0 carries the lineage on.
         const survival = k === 0 ? 1 : Math.max(0, 1 - stage / 0.9);
-        write(length++, eggSpot(s.at, i, k), metamorphosisColor(stage), Math.round(150 * survival), 1.3);
+        write(length++, eggSpot(s.at, i, k), metamorphosisColor(stage, adult), Math.round(150 * survival), 1.3);
       }
       // The mother fades out where she landed as she lays: she dies after this.
       pos = s.at;
