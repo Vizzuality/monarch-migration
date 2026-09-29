@@ -167,7 +167,7 @@ function flight(rng: Rng, waypoints: LngLat[], start: number, end: number, wande
   return { path, timestamps };
 }
 
-export function buildModel(count = 2200, seed = 1102): Model {
+export function buildModel(count = 800, seed = 1102): Model {
   const rng = mulberry32(seed);
   const lineages: Lineage[] = [];
   const trips: Trip[] = [];

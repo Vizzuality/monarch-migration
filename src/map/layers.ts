@@ -27,9 +27,9 @@ const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
 const TRAIL_STYLES = [
   // Faint long memory of the routes, so the shape of the flyway builds up.
   // Kept very low: hundreds of paths overlap in the corridor.
-  { id: 'routes-memory', trailLength: 12, opacity: 0.03, width: 1, rounded: false },
+  { id: 'routes-memory', trailLength: 12, opacity: 0.05, width: 1, rounded: false },
   // Comet tails.
-  { id: 'trails', trailLength: 4, opacity: 0.22, width: 1.5, rounded: true },
+  { id: 'trails', trailLength: 4, opacity: 0.28, width: 1.5, rounded: true },
 ];
 
 // One layer per bucket and style. Out-of-window buckets stay mounted with
