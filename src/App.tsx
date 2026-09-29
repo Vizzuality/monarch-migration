@@ -4,13 +4,12 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import './map/maplibre-worker';
 
 import { buildModel, computeFrame, YEAR_DAYS } from './data/model';
+import { MAP_STYLE } from './map/basemaps';
 import { cameraAt, type Camera } from './map/camera';
 import { DeckOverlay } from './map/DeckOverlay';
 import { buildLayers } from './map/layers';
 import { Caption, Legend } from './ui/Panels';
 import { Timeline } from './ui/Timeline';
-
-const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-nolabels-gl-style/style.json';
 
 // At 1× a full year plays in ~60 seconds.
 const DAYS_PER_SECOND = 6;
