@@ -116,11 +116,18 @@ function catmullRom(p0: LngLat, p1: LngLat, p2: LngLat, p3: LngLat, t: number): 
 
 const dist = (a: LngLat, b: LngLat) => Math.hypot(a[0] - b[0], a[1] - b[1]);
 
+// Output vertices per wiggle cycle: fewer and the wander turns into a zigzag.
+const VERTICES_PER_CYCLE = 14;
+const MAX_STEP = 0.3;
+
+// Leaves and lands a little slower than it cruises.
+const cruise = (u: number) => 0.65 * u + 0.35 * u * u * (3 - 2 * u);
+
 function flight(rng: Rng, waypoints: LngLat[], start: number, end: number, wander: number) {
   const pts = [waypoints[0], ...waypoints, waypoints[waypoints.length - 1]];
   const raw: LngLat[] = [];
   for (let i = 1; i < pts.length - 2; i++) {
-    const steps = Math.max(4, Math.ceil(dist(pts[i], pts[i + 1]) / 0.8));
+    const steps = Math.max(8, Math.ceil(dist(pts[i], pts[i + 1]) / MAX_STEP));
     for (let s = 0; s < steps; s++) raw.push(catmullRom(pts[i - 1], pts[i], pts[i + 1], pts[i + 2], s / steps));
   }
   raw.push(waypoints[waypoints.length - 1]);
@@ -130,28 +137,37 @@ function flight(rng: Rng, waypoints: LngLat[], start: number, end: number, wande
   const length = cumulative[cumulative.length - 1] || 1;
 
   const amp = length * wander * (0.4 + rng());
-  const f1 = 1 + rng() * 2;
-  const f2 = 3 + rng() * 4;
+  const f1 = 1 + rng() * 1.5;
+  const f2 = 2.5 + rng() * 2;
   const p1 = rng() * Math.PI * 2;
   const p2 = rng() * Math.PI * 2;
 
+  // Resample at even arc length, dense enough for the fastest wiggle.
+  const count = Math.max(raw.length, Math.ceil(f2 * VERTICES_PER_CYCLE));
   const path: LngLat[] = [];
   const timestamps: number[] = [];
-  for (let i = 0; i < raw.length; i++) {
-    const u = cumulative[i] / length;
-    const a = raw[Math.max(0, i - 1)];
-    const b = raw[Math.min(raw.length - 1, i + 1)];
+  let j = 0;
+  for (let k = 0; k <= count; k++) {
+    const u = k / count;
+    const at = u * length;
+    while (j < raw.length - 2 && cumulative[j + 1] < at) j++;
+    const a = raw[j];
+    const b = raw[j + 1];
+    const seg = cumulative[j + 1] - cumulative[j] || 1;
+    const w = Math.min(1, Math.max(0, (at - cumulative[j]) / seg));
     const dx = b[0] - a[0];
     const dy = b[1] - a[1];
     const n = Math.hypot(dx, dy) || 1;
-    const offset = Math.sin(Math.PI * u) * amp * (Math.sin(2 * Math.PI * f1 * u + p1) + 0.35 * Math.sin(2 * Math.PI * f2 * u + p2));
-    path.push([raw[i][0] - (dy / n) * offset, raw[i][1] + (dx / n) * offset]);
-    timestamps.push(start + u * (end - start));
+    const x = a[0] + dx * w;
+    const y = a[1] + dy * w;
+    const offset = Math.sin(Math.PI * u) * amp * (Math.sin(2 * Math.PI * f1 * u + p1) + 0.25 * Math.sin(2 * Math.PI * f2 * u + p2));
+    path.push([x - (dy / n) * offset, y + (dx / n) * offset]);
+    timestamps.push(start + cruise(u) * (end - start));
   }
   return { path, timestamps };
 }
 
-export function buildModel(count = 2200, seed = 1102): Model {
+export function buildModel(count = 800, seed = 1102): Model {
   const rng = mulberry32(seed);
   const lineages: Lineage[] = [];
   const trips: Trip[] = [];
