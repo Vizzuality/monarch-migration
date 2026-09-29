@@ -40,25 +40,26 @@ export const GENERATIONS: { id: Generation; name: string; lifespan: string; desc
 /**
  * Colors an egg passes through on its way to becoming a butterfly, keyed by
  * how far along it is (0 = just laid, 1 = about to hatch): cream egg,
- * yellow-banded caterpillar, jade chrysalis, and the dark case that shows
- * the orange wings through it right before emergence.
+ * yellow-banded caterpillar and jade chrysalis. The last stretch blends into
+ * the adult's own color, so it hatches already looking like the generation
+ * it becomes.
  */
 export const METAMORPHOSIS: { at: number; color: RGB }[] = [
   { at: 0, color: [238, 230, 204] },
   { at: 0.2, color: [216, 204, 104] },
   { at: 0.5, color: [104, 184, 140] },
   { at: 0.85, color: [104, 184, 140] },
-  { at: 1, color: [150, 72, 34] },
 ];
 
 /** The chrysalis jade stands for the whole egg-to-adult stage in the legend and stats. */
 export const EGG_COLOR: RGB = METAMORPHOSIS[2].color;
 
-export function metamorphosisColor(stage: number): RGB {
+export function metamorphosisColor(stage: number, adult: RGB): RGB {
+  const stops = [...METAMORPHOSIS, { at: 1, color: adult }];
   let i = 0;
-  while (i < METAMORPHOSIS.length - 2 && METAMORPHOSIS[i + 1].at <= stage) i++;
-  const a = METAMORPHOSIS[i];
-  const b = METAMORPHOSIS[i + 1];
+  while (i < stops.length - 2 && stops[i + 1].at <= stage) i++;
+  const a = stops[i];
+  const b = stops[i + 1];
   const u = Math.min(1, Math.max(0, (stage - a.at) / (b.at - a.at)));
   return [0, 1, 2].map((c) => Math.round(a.color[c] + (b.color[c] - a.color[c]) * u)) as RGB;
 }
