@@ -1,6 +1,6 @@
-export type Generation = 0 | 1 | 2 | 3;
+import { gradient, type RGB } from '../../data/color';
 
-export type RGB = [number, number, number];
+export type Generation = 0 | 1 | 2 | 3;
 
 /** Generation 0 is the long-lived "super generation": it flies south in autumn, winters in Mexico and starts the spring flight. */
 export const GENERATIONS: { id: Generation; name: string; lifespan: string; description: string; color: RGB }[] = [
@@ -55,26 +55,5 @@ export const METAMORPHOSIS: { at: number; color: RGB }[] = [
 export const EGG_COLOR: RGB = METAMORPHOSIS[2].color;
 
 export function metamorphosisColor(stage: number, adult: RGB): RGB {
-  const stops = [...METAMORPHOSIS, { at: 1, color: adult }];
-  let i = 0;
-  while (i < stops.length - 2 && stops[i + 1].at <= stage) i++;
-  const a = stops[i];
-  const b = stops[i + 1];
-  const u = Math.min(1, Math.max(0, (stage - a.at) / (b.at - a.at)));
-  return [0, 1, 2].map((c) => Math.round(a.color[c] + (b.color[c] - a.color[c]) * u)) as RGB;
-}
-
-/**
- * A stable per-individual variation of `color`, so a swarm reads as many
- * butterflies rather than one flat fill: a little darker or lighter, and a
- * touch warmer or cooler.
- */
-export function tint(color: RGB, id: number): RGB {
-  const a = Math.sin(id * 12.9898) * 43758.5453;
-  const b = Math.sin(id * 78.233) * 12345.6789;
-  const light = (a - Math.floor(a)) * 2 - 1;
-  const warm = (b - Math.floor(b)) * 2 - 1;
-  const k = 1 + light * 0.26;
-  const c = (v: number) => Math.max(0, Math.min(255, Math.round(v)));
-  return [c(color[0] * k + warm * 18), c(color[1] * k), c(color[2] * k - warm * 18)];
+  return gradient([...METAMORPHOSIS, { at: 1, color: adult }], stage);
 }

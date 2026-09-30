@@ -1,4 +1,4 @@
-export type LngLat = [number, number];
+import type { LngLat, Zone } from '../../data/random';
 
 /** Overwintering colonies inside the Monarch Butterfly Biosphere Reserve (Michoacán / Edomex). */
 export const COLONIES: { name: string; position: LngLat; weight: number; anchor: 'start' | 'end'; offset: [number, number] }[] = [
@@ -8,13 +8,6 @@ export const COLONIES: { name: string; position: LngLat; weight: number; anchor:
   { name: 'Piedra Herrada', position: [-99.975, 19.28], weight: 0.12, anchor: 'start', offset: [22, 0] },
   { name: 'Cerro Altamirano', position: [-100.12, 19.97], weight: 0.12, anchor: 'start', offset: [22, 0] },
 ];
-
-export interface Zone {
-  center: LngLat;
-  spread: LngLat;
-  /** Rejects points that land in the sea. */
-  land: (p: LngLat) => boolean;
-}
 
 export const ZONES: Record<'south' | 'central' | 'north', Zone> = {
   // Texas, Oklahoma, Louisiana
