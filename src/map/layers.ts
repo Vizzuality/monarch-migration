@@ -1,13 +1,14 @@
 import type { Layer } from '@deck.gl/core';
 import { TripsLayer } from '@deck.gl/geo-layers';
-import { ScatterplotLayer, TextLayer } from '@deck.gl/layers';
+import { PathLayer, ScatterplotLayer, TextLayer } from '@deck.gl/layers';
 
-import { COLONIES, PLACE_LABELS } from '../data/geo';
-import { GENERATIONS, tint } from '../data/generations';
-import type { Frame, Model, Ring, Trip } from '../data/model';
+import { tint } from '../data/color';
+import type { LngLat } from '../data/random';
+import type { Trip } from '../data/trips';
+import type { Frame, Migration, Ring, Simulation } from '../migrations/types';
 
 /**
- * Plain alpha blending: overlaps deepen toward the butterflies' own color
+ * Plain alpha blending: overlaps deepen toward the animals' own color
  * instead of adding up to white.
  */
 const BLEND = {
@@ -34,17 +35,18 @@ const TRAIL_STYLES = [
 
 // One layer per bucket and style. Out-of-window buckets stay mounted with
 // `visible: false` so their GPU buffers survive until they're needed again.
-function tripLayers(model: Model, day: number): Layer[] {
+// Ids carry the migration so a switch never diffs one herd's buffers against another's.
+function tripLayers(migration: Migration, sim: Simulation, day: number): Layer[] {
   return TRAIL_STYLES.flatMap((style) =>
-    model.buckets.map(
+    sim.buckets.map(
       (bucket, i) =>
         new TripsLayer<Trip>({
-          id: `${style.id}-${i}`,
+          id: `${migration.id}-${style.id}-${i}`,
           data: bucket.trips,
           visible: day >= bucket.from && day <= bucket.to + style.trailLength,
           getPath: (d) => d.path,
           getTimestamps: (d) => d.timestamps,
-          getColor: (d) => tint(GENERATIONS[d.gen].color, d.lineage),
+          getColor: (d) => tint(migration.groups[d.group], d.lineage),
           widthUnits: 'pixels',
           getWidth: style.width,
           capRounded: style.rounded,
@@ -60,13 +62,14 @@ function tripLayers(model: Model, day: number): Layer[] {
 }
 
 interface LayerInput {
-  model: Model;
+  migration: Migration;
+  sim: Simulation;
   frame: Frame;
   day: number;
   zoom: number;
 }
 
-export function buildLayers({ model, frame, day, zoom }: LayerInput): Layer[] {
+export function buildLayers({ migration, sim, frame, day, zoom }: LayerInput): Layer[] {
   const points = {
     length: frame.length,
     attributes: {
@@ -76,12 +79,13 @@ export function buildLayers({ model, frame, day, zoom }: LayerInput): Layer[] {
     },
   };
 
-  const closeUp = clamp01((zoom - 6.2) / 1.2);
+  const [near, far] = migration.closeUp;
+  const closeUp = clamp01((zoom - near) / (far - near));
 
   return [
     new TextLayer({
-      id: 'place-labels',
-      data: PLACE_LABELS,
+      id: `${migration.id}-place-labels`,
+      data: migration.placeLabels,
       getPosition: (d) => d.position,
       getText: (d) => d.text,
       getSize: (d) => d.size,
@@ -92,13 +96,25 @@ export function buildLayers({ model, frame, day, zoom }: LayerInput): Layer[] {
       updateTriggers: { getColor: closeUp },
     }),
 
-    ...tripLayers(model, day),
+    new PathLayer<LngLat[]>({
+      id: `${migration.id}-rivers`,
+      data: migration.rivers ?? [],
+      getPath: (d) => d,
+      getColor: [120, 220, 255, 90],
+      widthUnits: 'pixels',
+      getWidth: 1.5,
+      jointRounded: true,
+      capRounded: true,
+      parameters: BLEND,
+    }),
+
+    ...tripLayers(migration, sim, day),
 
     new ScatterplotLayer<Ring>({
-      id: 'emergence-rings',
+      id: 'rings',
       data: frame.rings,
       getPosition: (d) => d.position,
-      getRadius: (d) => 6000 + d.progress * 70000,
+      getRadius: (d) => d.size * (0.08 + 0.92 * d.progress),
       getLineColor: (d) => [...d.color, Math.round(200 * (1 - d.progress) ** 2)],
       stroked: true,
       filled: false,
@@ -108,7 +124,7 @@ export function buildLayers({ model, frame, day, zoom }: LayerInput): Layer[] {
     }),
 
     new ScatterplotLayer({
-      id: 'butterflies',
+      id: 'animals',
       data: points,
       radiusUnits: 'pixels',
       opacity: 1,
@@ -116,8 +132,8 @@ export function buildLayers({ model, frame, day, zoom }: LayerInput): Layer[] {
     }),
 
     new TextLayer({
-      id: 'colony-labels',
-      data: COLONIES,
+      id: `${migration.id}-site-labels`,
+      data: migration.sites,
       getPosition: (d) => d.position,
       getText: (d) => d.name.toUpperCase(),
       getSize: 11,

@@ -1,4 +1,4 @@
-import type { HeatmapLayerSpecification, RasterDEMSourceSpecification, StyleSpecification } from 'maplibre-gl';
+import type { RasterDEMSourceSpecification, StyleSpecification } from 'maplibre-gl';
 
 /** AWS Terrain Tiles (Mapzen terrarium encoding), free and keyless. */
 const TERRAIN_DEM: RasterDEMSourceSpecification = {
@@ -34,22 +34,3 @@ export const MAP_STYLE: StyleSpecification = {
   terrain: { source: 'terrain-dem', exaggeration: 6 },
 };
 
-/** A soft milkweed-green haze over wherever eggs and caterpillars are. */
-export const BREEDING_HEATMAP: HeatmapLayerSpecification['paint'] = {
-  'heatmap-radius': ['interpolate', ['exponential', 2], ['zoom'], 3, 14, 8, 90],
-  'heatmap-intensity': ['interpolate', ['linear'], ['zoom'], 3, 0.25, 8, 0.6],
-  'heatmap-color': [
-    'interpolate',
-    ['linear'],
-    ['heatmap-density'],
-    0,
-    'rgba(104, 184, 140, 0)',
-    0.3,
-    'rgba(120, 180, 110, 0.18)',
-    0.7,
-    'rgba(140, 196, 110, 0.34)',
-    1,
-    'rgba(176, 214, 128, 0.46)',
-  ],
-  'heatmap-opacity': 0.85,
-};

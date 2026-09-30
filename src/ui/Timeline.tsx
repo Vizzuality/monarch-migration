@@ -1,14 +1,16 @@
 import { useMemo, useRef } from 'react';
 
-import { GENERATIONS } from '../data/generations';
-import { YEAR_DAYS, type Activity } from '../data/model';
-import { MONTH_STARTS, MONTHS } from '../data/story';
+import { MONTH_STARTS, MONTHS, YEAR_DAYS } from '../data/calendar';
+import type { RGB } from '../data/color';
+import type { Activity } from '../migrations/types';
 
 const SPEEDS = [0.5, 1, 2, 4];
 const H = 100;
 
 interface Props {
   activity: Activity;
+  colors: RGB[];
+  lineColor: RGB;
   day: number;
   playing: boolean;
   speed: number;
@@ -22,7 +24,7 @@ interface Props {
 function stackedAreas(activity: Activity) {
   const base = new Float32Array(YEAR_DAYS);
   const y = (v: number) => H - (v / activity.max) * (H - 6);
-  return activity.flying.map((series, gen) => {
+  return activity.moving.map((series, group) => {
     const top: string[] = [];
     const bottom: string[] = [];
     for (let d = 0; d < YEAR_DAYS; d++) {
@@ -30,20 +32,20 @@ function stackedAreas(activity: Activity) {
       base[d] += series[d];
       top.push(`${d},${y(base[d]).toFixed(2)}`);
     }
-    return { gen, d: `M${top.join('L')}L${bottom.reverse().join('L')}Z` };
+    return { group, d: `M${top.join('L')}L${bottom.reverse().join('L')}Z` };
   });
 }
 
-function eggLine(activity: Activity) {
-  const max = Math.max(...activity.eggs);
+function overlayLine(activity: Activity) {
+  const max = Math.max(...activity.line);
   const pts: string[] = [];
-  for (let d = 0; d < YEAR_DAYS; d++) pts.push(`${d},${(H - (activity.eggs[d] / max) * (H * 0.45)).toFixed(2)}`);
+  for (let d = 0; d < YEAR_DAYS; d++) pts.push(`${d},${(H - (activity.line[d] / max) * (H * 0.45)).toFixed(2)}`);
   return `M${pts.join('L')}`;
 }
 
-export function Timeline({ activity, day, playing, speed, onTogglePlay, onSpeed, onScrub, onScrubStart, onScrubEnd }: Props) {
+export function Timeline({ activity, colors, lineColor, day, playing, speed, onTogglePlay, onSpeed, onScrub, onScrubStart, onScrubEnd }: Props) {
   const areas = useMemo(() => stackedAreas(activity), [activity]);
-  const eggs = useMemo(() => eggLine(activity), [activity]);
+  const line = useMemo(() => overlayLine(activity), [activity]);
   const trackRef = useRef<HTMLDivElement>(null);
 
   const scrubTo = (clientX: number) => {
@@ -97,10 +99,10 @@ export function Timeline({ activity, day, playing, speed, onTogglePlay, onSpeed,
         >
           <svg viewBox={`0 0 ${YEAR_DAYS} ${H}`} preserveAspectRatio="none" className="chart">
             <defs>
-              {GENERATIONS.map((g) => (
-                <linearGradient key={g.id} id={`grad-${g.id}`} x1="0" x2="0" y1="0" y2="1">
-                  <stop offset="0%" stopColor={`rgb(${g.color})`} stopOpacity="0.95" />
-                  <stop offset="100%" stopColor={`rgb(${g.color})`} stopOpacity="0.35" />
+              {colors.map((color, i) => (
+                <linearGradient key={i} id={`grad-${i}`} x1="0" x2="0" y1="0" y2="1">
+                  <stop offset="0%" stopColor={`rgb(${color})`} stopOpacity="0.95" />
+                  <stop offset="100%" stopColor={`rgb(${color})`} stopOpacity="0.35" />
                 </linearGradient>
               ))}
               <clipPath id="played">
@@ -112,15 +114,15 @@ export function Timeline({ activity, day, playing, speed, onTogglePlay, onSpeed,
             ))}
             <g opacity="0.28">
               {areas.map((a) => (
-                <path key={a.gen} d={a.d} fill={`url(#grad-${a.gen})`} />
+                <path key={a.group} d={a.d} fill={`url(#grad-${a.group})`} />
               ))}
             </g>
             <g clipPath="url(#played)">
               {areas.map((a) => (
-                <path key={a.gen} d={a.d} fill={`url(#grad-${a.gen})`} />
+                <path key={a.group} d={a.d} fill={`url(#grad-${a.group})`} />
               ))}
             </g>
-            <path d={eggs} className="egg-line" vectorEffect="non-scaling-stroke" />
+            <path d={line} className="overlay-line" stroke={`rgba(${lineColor}, 0.55)`} vectorEffect="non-scaling-stroke" />
           </svg>
           <div className="playhead" style={{ left: `${pct}%` }} />
           <div className="playhead-dot" style={{ left: `${pct}%` }} />

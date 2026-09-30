@@ -59,6 +59,37 @@ button {
 
 /* Caption */
 
+.switcher {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: -6px -8px 16px;
+  padding: 3px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.switcher button {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 11.5px;
+  color: var(--muted);
+  white-space: nowrap;
+  transition: background 200ms, color 200ms;
+}
+
+.switcher button:hover {
+  color: var(--text);
+}
+
+.switcher button.active {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--text);
+}
+
 .caption {
   top: 24px;
   left: 24px;
@@ -145,6 +176,7 @@ button {
 }
 
 .stat-label {
+  white-space: nowrap;
   font-size: 10.5px;
   color: var(--muted);
   text-transform: uppercase;
@@ -189,6 +221,13 @@ button {
   height: 10px;
   border-radius: 50%;
   margin-top: 4px;
+}
+
+.legend i.ring {
+  width: 10px;
+  height: 10px;
+  border: 1.5px solid;
+  background: transparent;
 }
 
 .legend i.small {
@@ -331,9 +370,8 @@ button {
   stroke-width: 1;
 }
 
-.egg-line {
+.overlay-line {
   fill: none;
-  stroke: rgba(120, 255, 150, 0.55);
   stroke-width: 1.2;
   stroke-dasharray: 2 3;
 }

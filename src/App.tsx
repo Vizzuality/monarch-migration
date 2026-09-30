@@ -3,11 +3,12 @@ import Map, { Layer, Source, type ViewStateChangeEvent } from 'react-map-gl/mapl
 import 'maplibre-gl/dist/maplibre-gl.css';
 import './map/maplibre-worker';
 
-import { breedingGrounds, buildModel, computeFrame, YEAR_DAYS } from './data/model';
-import { BREEDING_HEATMAP, MAP_STYLE } from './map/basemaps';
-import { cameraAt, type Camera } from './map/camera';
+import { YEAR_DAYS } from './data/calendar';
+import { MAP_STYLE } from './map/basemaps';
+import { cameraPath, type Camera } from './map/camera';
 import { DeckOverlay } from './map/DeckOverlay';
 import { buildLayers } from './map/layers';
+import { migrationById, simulationOf } from './migrations';
 import { Caption, Legend } from './ui/Panels';
 import { Timeline } from './ui/Timeline';
 
@@ -16,8 +17,6 @@ const DAYS_PER_SECOND = 6;
 const CAMERA_BLEND_MS = 1800;
 // Keeps the action clear of the caption, legend and timeline panels.
 const PADDING = { top: 20, bottom: 150, left: 380, right: 320 };
-
-const model = buildModel();
 
 const ease = (x: number) => x * x * (3 - 2 * x);
 
@@ -33,14 +32,37 @@ function blendCamera(from: Camera, to: Camera, u: number): Camera {
   };
 }
 
+const initialMigration = migrationById(new URLSearchParams(window.location.search).get('m'));
+
 export default function App() {
-  const [day, setDay] = useState(20);
+  const [migration, setMigration] = useState(initialMigration);
+  const [day, setDay] = useState(initialMigration.startDay);
   const [clock, setClock] = useState(0);
   const [playing, setPlaying] = useState(true);
   const [speed, setSpeed] = useState(1);
   const [follow, setFollow] = useState(true);
-  const [manualCamera, setManualCamera] = useState<Camera>(() => cameraAt(20));
+  const [manualCamera, setManualCamera] = useState<Camera>(() => cameraPath(initialMigration.keyframes)(initialMigration.startDay));
   const [blendStart, setBlendStart] = useState<number | null>(null);
+
+  const sim = simulationOf(migration);
+  const cameraAt = useMemo(() => cameraPath(migration.keyframes), [migration]);
+
+  useEffect(() => {
+    document.title = migration.pageTitle;
+  }, [migration]);
+
+  // Keeps the date, so the switch compares both migrations on the same day of the year.
+  const switchMigration = (id: string) => {
+    const next = migrationById(id);
+    if (next === migration) return;
+    const url = new URL(window.location.href);
+    url.searchParams.set('m', next.id);
+    window.history.replaceState(null, '', url);
+    setMigration(next);
+    setManualCamera(cameraPath(next.keyframes)(day));
+    setBlendStart(null);
+    setFollow(true);
+  };
 
   const playingRef = useRef(playing);
   const speedRef = useRef(speed);
@@ -101,12 +123,12 @@ export default function App() {
     setFollow(true);
   };
 
-  // MapLibre reparses GeoJSON on a worker, so refresh the breeding grounds once per day, not per frame.
+  // MapLibre reparses GeoJSON on a worker, so refresh the hotspots once per day, not per frame.
   const today = Math.floor(day);
-  const breeding = useMemo(() => breedingGrounds(model, today + 0.5), [today]);
+  const hotspots = useMemo(() => sim.hotspots(today + 0.5), [sim, today]);
 
-  const frame = computeFrame(model, day, clock);
-  const layers = buildLayers({ model, frame, day, zoom: camera.zoom });
+  const frame = sim.frame(day, clock);
+  const layers = buildLayers({ migration, sim, frame, day, zoom: camera.zoom });
 
   return (
     <div className="app">
@@ -119,16 +141,18 @@ export default function App() {
         attributionControl={{ compact: true }}
         style={{ position: 'absolute', inset: 0 }}
       >
-        <Source id="breeding" type="geojson" data={breeding}>
-          <Layer id="breeding-heatmap" type="heatmap" paint={BREEDING_HEATMAP} />
+        <Source id="hotspots" type="geojson" data={hotspots}>
+          <Layer id="hotspots-heatmap" type="heatmap" paint={migration.hotspotPaint} />
         </Source>
         <DeckOverlay layers={layers} />
       </Map>
       <div className="vignette" />
-      <Caption day={day} frame={frame} />
-      <Legend follow={follow} onFollow={enableFollow} />
+      <Caption migration={migration} day={day} frame={frame} onSwitch={switchMigration} />
+      <Legend migration={migration} follow={follow} onFollow={enableFollow} />
       <Timeline
-        activity={model.activity}
+        activity={sim.activity}
+        colors={migration.groups}
+        lineColor={migration.lineColor}
         day={day}
         playing={playing}
         speed={speed}

@@ -1,74 +1,79 @@
-import { EGG_COLOR, GENERATIONS } from '../data/generations';
-import type { Frame } from '../data/model';
-import { chapterAt, formatDay } from '../data/story';
+import { chapterAt, formatDay } from '../data/calendar';
+import type { RGB } from '../data/color';
+import { MIGRATIONS } from '../migrations';
+import type { Frame, LegendItem, Migration } from '../migrations/types';
 
-const nf = new Intl.NumberFormat('es-ES');
+const compact = new Intl.NumberFormat('es-ES', { notation: 'compact', maximumSignificantDigits: 2 });
 
-// Each simulated lineage stands in for this many real butterflies, so the counters read at a believable scale.
-const BUTTERFLIES_PER_DOT = 30_000;
+interface CaptionProps {
+  migration: Migration;
+  day: number;
+  frame: Frame;
+  onSwitch: (id: string) => void;
+}
 
-export function Caption({ day, frame }: { day: number; frame: Frame }) {
-  const chapter = chapterAt(day);
+export function Caption({ migration, day, frame, onSwitch }: CaptionProps) {
+  const chapter = chapterAt(migration.chapters, day);
   return (
     <div className="caption panel">
-      <div className="eyebrow">Danaus plexippus · Migración anual</div>
+      <nav className="switcher" aria-label="Migración">
+        {MIGRATIONS.map((m) => (
+          <button key={m.id} className={m.id === migration.id ? 'active' : ''} aria-pressed={m.id === migration.id} onClick={() => onSwitch(m.id)}>
+            {m.name}
+          </button>
+        ))}
+      </nav>
+      <div className="eyebrow">{migration.eyebrow}</div>
       <h1>
-        La gran migración <span>de la mariposa monarca</span>
+        {migration.title} <span>{migration.subtitle}</span>
       </h1>
       <div className="date">{formatDay(day)}</div>
-      <div className="chapter" key={chapter.title}>
+      <div className="chapter" key={`${migration.id}-${chapter.title}`}>
         <h2>{chapter.title}</h2>
         <p>{chapter.body}</p>
       </div>
       <div className="stats">
-        <Stat label="En vuelo" value={frame.flying} color={GENERATIONS[1].color} />
-        <Stat label="Huevos y orugas" value={frame.eggs} color={EGG_COLOR} />
-        <Stat label="En los bosques" value={frame.resting} color={GENERATIONS[0].color} />
+        {migration.stats.map((s, i) => (
+          <Stat key={s.label} label={s.label} value={frame.stats[i]} color={s.color} />
+        ))}
       </div>
     </div>
   );
 }
 
-function formatMillions(n: number) {
-  if (n === 0) return '0';
-  if (n < 1e6) return '<1M';
-  return `${nf.format(Math.round(n / 1e6))}M`;
-}
-
-function Stat({ label, value, color }: { label: string; value: number; color: number[] }) {
+function Stat({ label, value, color }: { label: string; value: number; color: RGB }) {
   return (
     <div className="stat">
       <div className="stat-value" style={{ color: `rgb(${color})` }}>
-        {formatMillions(value * BUTTERFLIES_PER_DOT)}
+        {compact.format(value)}
       </div>
       <div className="stat-label">{label}</div>
     </div>
   );
 }
 
-export function Legend({ follow, onFollow }: { follow: boolean; onFollow: () => void }) {
+function Mark({ item }: { item: LegendItem }) {
+  const rgb = `rgb(${item.color})`;
+  if (item.mark === 'ring') return <i className="ring" style={{ borderColor: rgb, boxShadow: `0 0 8px ${rgb}` }} />;
+  return <i className={item.mark} style={{ background: rgb, boxShadow: `0 0 ${item.mark === 'small' ? 8 : 10}px ${rgb}` }} />;
+}
+
+export function Legend({ migration, follow, onFollow }: { migration: Migration; follow: boolean; onFollow: () => void }) {
   return (
     <div className="legend panel">
-      <h3>Un año, cuatro generaciones</h3>
+      <h3>{migration.legend.title}</h3>
       <ul>
-        {GENERATIONS.map((g) => (
-          <li key={g.id}>
-            <i style={{ background: `rgb(${g.color})`, boxShadow: `0 0 10px rgb(${g.color})` }} />
+        {migration.legend.items.map((item) => (
+          <li key={item.name}>
+            <Mark item={item} />
             <div>
               <strong>
-                {g.name} <em>{g.lifespan}</em>
+                {item.name} {item.tag && <em>{item.tag}</em>}
               </strong>
-              <p>{g.description}</p>
+              <p>{item.description}</p>
             </div>
           </li>
         ))}
-        <li>
-          <i className="small" style={{ background: `rgb(${EGG_COLOR})`, boxShadow: `0 0 8px rgb(${EGG_COLOR})` }} />
-          <div>
-            <strong>Huevo → oruga → crisálida</strong>
-            <p>Unas 4 semanas sobre algodoncillo, de huevo crema a oruga y a crisálida jade. La bruma verde marca dónde crían; cada anillo, una eclosión.</p>
-          </div>
-        </li>
       </ul>
       <button className={`follow ${follow ? 'active' : ''}`} onClick={onFollow}>
         <svg viewBox="0 0 24 24" width="14" height="14">
@@ -76,7 +81,7 @@ export function Legend({ follow, onFollow }: { follow: boolean; onFollow: () => 
         </svg>
         {follow ? 'Cámara cinemática' : 'Volver a cámara cinemática'}
       </button>
-      <p className="note">Datos simulados a partir de la fenología publicada de la población oriental.</p>
+      <p className="note">{migration.legend.note}</p>
     </div>
   );
 }
