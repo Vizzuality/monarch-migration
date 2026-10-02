@@ -1,15 +1,17 @@
+import { AnimatePresence, motion } from 'motion/react';
 import { useMemo, useRef } from 'react';
 
-import { MONTH_STARTS, MONTHS, YEAR_DAYS } from '../data/calendar';
-import type { RGB } from '../data/color';
+import playIcon from '../assets/play.svg';
+import { dateOf, MONTH_LENGTHS, MONTHS, YEAR_DAYS } from '../data/calendar';
+import { GENERATIONS, type Generation } from '../monarch/generations';
 import type { Activity } from '../monarch/types';
 
-const H = 100;
+const NEUTRAL = '#e4d2ba';
 
 interface Props {
   activity: Activity;
-  colors: RGB[];
   day: number;
+  dominant: Generation | null;
   playing: boolean;
   onTogglePlay: () => void;
   onScrub: (day: number) => void;
@@ -17,23 +19,41 @@ interface Props {
   onScrubEnd: () => void;
 }
 
-function stackedAreas(activity: Activity) {
-  const base = new Float32Array(YEAR_DAYS);
-  const y = (v: number) => H - (v / activity.max) * (H - 6);
-  return activity.moving.map((series, group) => {
-    const top: string[] = [];
-    const bottom: string[] = [];
-    for (let d = 0; d < YEAR_DAYS; d++) {
-      bottom.push(`${d},${y(base[d]).toFixed(2)}`);
-      base[d] += series[d];
-      top.push(`${d},${y(base[d]).toFixed(2)}`);
-    }
-    return { group, d: `M${top.join('L')}L${bottom.reverse().join('L')}Z` };
-  });
+/** One color stop per day: the Dominant generation's color, as opaque as it is strong. */
+function barGradient({ dominant, strength }: Activity) {
+  const stops: string[] = [];
+  let last = GENERATIONS[0].color;
+  for (let d = 0; d < YEAR_DAYS; d++) {
+    const g = dominant[d];
+    // Days with no Dominant generation fade the neighbour's color out instead of going through grey.
+    const color = g === -1 ? last : GENERATIONS[g].color;
+    last = color;
+    stops.push(`rgba(${color}, ${strength[d].toFixed(3)}) ${(((d + 0.5) / YEAR_DAYS) * 100).toFixed(3)}%`);
+  }
+  return `linear-gradient(to right, ${stops.join(', ')})`;
 }
 
-export function Timeline({ activity, colors, day, playing, onTogglePlay, onScrub, onScrubStart, onScrubEnd }: Props) {
-  const areas = useMemo(() => stackedAreas(activity), [activity]);
+function PlayheadHalo() {
+  return (
+    <svg className="halo" width="117" height="68" viewBox="0 0 117 68" aria-hidden="true">
+      <circle cx="58.5" cy="58.5" r="58.5" fill="currentColor" opacity="0.1" />
+      <circle cx="58.5" cy="58.5" r="21.5" fill="currentColor" opacity="0.2" />
+      <circle cx="58.5" cy="58.5" r="4.5" fill="currentColor" stroke="white" strokeWidth="2" />
+    </svg>
+  );
+}
+
+function PauseIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">
+      <rect x="4.5" y="3" width="4" height="14" rx="1.5" fill="#050507" />
+      <rect x="11.5" y="3" width="4" height="14" rx="1.5" fill="#050507" />
+    </svg>
+  );
+}
+
+export function Timeline({ activity, day, dominant, playing, onTogglePlay, onScrub, onScrubStart, onScrubEnd }: Props) {
+  const bar = useMemo(() => barGradient(activity), [activity]);
   const trackRef = useRef<HTMLDivElement>(null);
 
   const scrubTo = (clientX: number) => {
@@ -42,78 +62,65 @@ export function Timeline({ activity, colors, day, playing, onTogglePlay, onScrub
     onScrub(Math.min(YEAR_DAYS - 0.01, Math.max(0, ((clientX - rect.left) / rect.width) * YEAR_DAYS)));
   };
 
-  const pct = (day / YEAR_DAYS) * 100;
+  const { date, month } = dateOf(day);
+  const color = dominant === null ? NEUTRAL : `rgb(${GENERATIONS[dominant].color})`;
 
   return (
-    <div className="timeline panel">
-      <div className="timeline-controls">
-        <button className="play" onClick={onTogglePlay} aria-label={playing ? 'Pausar' : 'Reproducir'}>
-          {playing ? (
-            <svg viewBox="0 0 24 24" width="18" height="18">
-              <rect x="6" y="5" width="4" height="14" rx="1" fill="currentColor" />
-              <rect x="14" y="5" width="4" height="14" rx="1" fill="currentColor" />
-            </svg>
-          ) : (
-            <svg viewBox="0 0 24 24" width="18" height="18">
-              <path d="M7 5l12 7-12 7z" fill="currentColor" />
-            </svg>
-          )}
-        </button>
-      </div>
+    <div className="timeline">
+      <button className="play" onClick={onTogglePlay} aria-label={playing ? 'Pause' : 'Play'}>
+        <AnimatePresence initial={false}>
+          <motion.span
+            key={playing ? 'pause' : 'play'}
+            className="play-icon"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+          >
+            {playing ? <PauseIcon /> : <img src={playIcon} width="20" height="20" alt="" />}
+          </motion.span>
+        </AnimatePresence>
+      </button>
 
-      <div className="timeline-body">
-        <div
-          className="track"
-          ref={trackRef}
-          onPointerDown={(e) => {
-            e.currentTarget.setPointerCapture(e.pointerId);
-            onScrubStart();
-            scrubTo(e.clientX);
-          }}
-          onPointerMove={(e) => {
-            if (e.currentTarget.hasPointerCapture(e.pointerId)) scrubTo(e.clientX);
-          }}
-          onPointerUp={(e) => {
-            e.currentTarget.releasePointerCapture(e.pointerId);
-            onScrubEnd();
-          }}
-        >
-          <svg viewBox={`0 0 ${YEAR_DAYS} ${H}`} preserveAspectRatio="none" className="chart">
-            <defs>
-              {colors.map((color, i) => (
-                <linearGradient key={i} id={`grad-${i}`} x1="0" x2="0" y1="0" y2="1">
-                  <stop offset="0%" stopColor={`rgb(${color})`} stopOpacity="0.95" />
-                  <stop offset="100%" stopColor={`rgb(${color})`} stopOpacity="0.35" />
-                </linearGradient>
-              ))}
-              <clipPath id="played">
-                <rect x="0" y="0" width={day} height={H} />
-              </clipPath>
-            </defs>
-            {MONTH_STARTS.map((m) => (
-              <line key={m} x1={m} x2={m} y1={0} y2={H} className="month-line" vectorEffect="non-scaling-stroke" />
-            ))}
-            <g opacity="0.28">
-              {areas.map((a) => (
-                <path key={a.group} d={a.d} fill={`url(#grad-${a.group})`} />
-              ))}
-            </g>
-            <g clipPath="url(#played)">
-              {areas.map((a) => (
-                <path key={a.group} d={a.d} fill={`url(#grad-${a.group})`} />
-              ))}
-            </g>
-          </svg>
-          <div className="playhead" style={{ left: `${pct}%` }} />
-          <div className="playhead-dot" style={{ left: `${pct}%` }} />
-        </div>
-        <div className="months">
-          {MONTHS.map((m, i) => (
-            <span key={m} style={{ left: `${(MONTH_STARTS[i] / YEAR_DAYS) * 100}%` }}>
+      <div
+        className="track"
+        ref={trackRef}
+        role="slider"
+        aria-label="Day of the year"
+        aria-valuemin={0}
+        aria-valuemax={YEAR_DAYS - 1}
+        aria-valuenow={Math.floor(day)}
+        aria-valuetext={`${date} ${month}`}
+        onPointerDown={(e) => {
+          e.currentTarget.setPointerCapture(e.pointerId);
+          onScrubStart();
+          scrubTo(e.clientX);
+        }}
+        onPointerMove={(e) => {
+          if (e.currentTarget.hasPointerCapture(e.pointerId)) scrubTo(e.clientX);
+        }}
+        onPointerUp={(e) => {
+          e.currentTarget.releasePointerCapture(e.pointerId);
+          onScrubEnd();
+        }}
+      >
+        <div className="bar" style={{ backgroundImage: bar }} />
+        <div className="months" style={{ gridTemplateColumns: MONTH_LENGTHS.map((l) => `${l}fr`).join(' ') }}>
+          {MONTHS.map((m) => (
+            <span key={m} className="month">
               {m}
             </span>
           ))}
         </div>
+        <motion.div
+          className="playhead"
+          style={{ left: `${(day / YEAR_DAYS) * 100}%` }}
+          initial={false}
+          animate={{ color }}
+          transition={{ duration: 0.4 }}
+        >
+          <PlayheadHalo />
+        </motion.div>
       </div>
     </div>
   );

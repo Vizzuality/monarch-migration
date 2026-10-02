@@ -109,20 +109,34 @@ function stateAt(lineage: Lineage, t: number): State {
   return { kind: 'rest' };
 }
 
+// Below this share of its own peak a generation's stragglers don't count as
+// dominant, so the label doesn't name a handful of butterflies.
+const DOMINANT_MIN = 0.03;
+
 function computeActivity(lineages: Lineage[]): Activity {
   const moving = GENERATIONS.map(() => new Float32Array(YEAR_DAYS));
-  let max = 0;
   for (let d = 0; d < YEAR_DAYS; d++) {
     const t = d + 0.5;
     for (const lineage of lineages) {
       const s = stateAt(lineage, t);
       if (s.kind === 'fly') moving[s.trip.group][d]++;
     }
-    let total = 0;
-    for (const g of moving) total += g[d];
-    max = Math.max(max, total);
   }
-  return { moving, max };
+
+  const peaks = moving.map((series) => Math.max(...series));
+  const dominant = new Int8Array(YEAR_DAYS).fill(-1);
+  const strength = new Float32Array(YEAR_DAYS);
+  for (let d = 0; d < YEAR_DAYS; d++) {
+    let best = -1;
+    for (let g = 0; g < moving.length; g++) {
+      if (moving[g][d] < peaks[g] * DOMINANT_MIN) continue;
+      if (best === -1 || moving[g][d] > moving[best][d]) best = g;
+    }
+    dominant[d] = best;
+    // sqrt keeps the quiet edges of a band visible.
+    if (best !== -1) strength[d] = Math.sqrt(moving[best][d] / peaks[best]);
+  }
+  return { moving, dominant, strength };
 }
 
 const RING_DAYS = 3;
@@ -133,9 +147,6 @@ const RING_SIZE = 76_000;
 const CLUTCH = 6;
 const CLUTCH_SPREAD = 0.6;
 const LAYING_DAYS = 4;
-
-// Each simulated lineage stands in for this many real butterflies, so the counters read at a believable scale.
-const BUTTERFLIES_PER_DOT = 30_000;
 
 /** Where the `k`-th egg of lineage `i` goes. Egg 0 sits right where the mother landed: it's the one that becomes the next generation. */
 function eggSpot(at: LngLat, i: number, k: number): LngLat {
@@ -168,9 +179,6 @@ function computeFrame(lineages: Lineage[], t: number, clock: number): Frame {
     radii[j] = radius;
   };
   const rings: Ring[] = [];
-  let flying = 0;
-  let eggs = 0;
-  let resting = 0;
 
   lineages.forEach((lineage, i) => {
     const s = stateAt(lineage, t);
@@ -184,13 +192,11 @@ function computeFrame(lineages: Lineage[], t: number, clock: number): Frame {
       color = GENERATIONS[s.trip.group].color;
       alpha = 190;
       radius = 2.2;
-      flying++;
       const age = t - s.trip.start;
       if (age < RING_DAYS && s.trip !== lineage.trips[0]) {
         rings.push({ position: s.trip.path[0], progress: age / RING_DAYS, color, size: RING_SIZE });
       }
     } else if (s.kind === 'egg') {
-      eggs++;
       const age = t - s.since;
       const stage = age / (s.until - s.since);
       const laid = Math.min(CLUTCH, Math.floor((age / LAYING_DAYS) * CLUTCH) + 1);
@@ -212,14 +218,12 @@ function computeFrame(lineages: Lineage[], t: number, clock: number): Frame {
       color = GENERATIONS[0].color;
       alpha = 105;
       radius = 1.5;
-      resting++;
     }
 
     write(i, pos, tint(color, i), alpha, radius);
   });
 
-  const stats = [flying, eggs, resting].map((v) => v * BUTTERFLIES_PER_DOT);
-  return { length, positions, colors, radii, rings, stats };
+  return { length, positions, colors, radii, rings };
 }
 
 /** Where eggs and caterpillars are on day `t`, one point per lineage between generations. */
