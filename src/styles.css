@@ -102,7 +102,7 @@ p {
   font-family: var(--display);
   font-weight: 700;
   font-size: 120.552px;
-  line-height: 75.345px;
+  line-height: 0.82;
   font-feature-settings: 'dlig' 1;
   padding-top: 0.2em;
 }
