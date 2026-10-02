@@ -1,4 +1,4 @@
-import type { LngLat, Zone } from '../../data/random';
+import type { LngLat, Zone } from '../data/random';
 
 /** Overwintering colonies inside the Monarch Butterfly Biosphere Reserve (Michoacán / Edomex). */
 export const COLONIES: { name: string; position: LngLat; weight: number; anchor: 'start' | 'end'; offset: [number, number] }[] = [

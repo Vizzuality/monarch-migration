@@ -1,10 +1,10 @@
-import { YEAR_DAYS } from '../../data/calendar';
-import { tint, type RGB } from '../../data/color';
-import { around, gauss, inZone, mulberry32, unit, type LngLat, type Rng } from '../../data/random';
-import { bucketTrips, flight, positionOnTrip, type Trip } from '../../data/trips';
-import type { Activity, Frame, Ring, Simulation } from '../types';
-import { COLONIES, FLYWAY, ZONES } from './geo';
+import { YEAR_DAYS } from '../data/calendar';
+import { tint, type RGB } from '../data/color';
+import { around, gauss, inZone, mulberry32, unit, type LngLat, type Rng } from '../data/random';
+import { bucketTrips, flight, positionOnTrip, type Trip } from '../data/trips';
 import { GENERATIONS, metamorphosisColor, type Generation } from './generations';
+import { COLONIES, FLYWAY, ZONES } from './geo';
+import type { Activity, Frame, Ring, Simulation } from './types';
 
 /**
  * Synthetic migration model.
@@ -111,20 +111,18 @@ function stateAt(lineage: Lineage, t: number): State {
 
 function computeActivity(lineages: Lineage[]): Activity {
   const moving = GENERATIONS.map(() => new Float32Array(YEAR_DAYS));
-  const eggs = new Float32Array(YEAR_DAYS);
   let max = 0;
   for (let d = 0; d < YEAR_DAYS; d++) {
     const t = d + 0.5;
     for (const lineage of lineages) {
       const s = stateAt(lineage, t);
       if (s.kind === 'fly') moving[s.trip.group][d]++;
-      else if (s.kind === 'egg') eggs[d]++;
     }
     let total = 0;
     for (const g of moving) total += g[d];
     max = Math.max(max, total);
   }
-  return { moving, line: eggs, max };
+  return { moving, max };
 }
 
 const RING_DAYS = 3;
