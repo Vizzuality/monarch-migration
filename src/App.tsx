@@ -3,22 +3,24 @@ import Map, { Layer, Source } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import './map/maplibre-worker';
 
+import logo from './assets/vizzuality.svg';
 import { YEAR_DAYS } from './data/calendar';
 import { MAP_STYLE } from './map/basemaps';
 import { cameraPath } from './map/camera';
 import { DeckOverlay } from './map/DeckOverlay';
 import { buildLayers } from './map/layers';
-import { GENERATIONS } from './monarch/generations';
+import type { Generation } from './monarch/generations';
 import { buildModel } from './monarch/model';
 import { HOTSPOT_PAINT, KEYFRAMES, START_DAY } from './monarch/scene';
-import { Caption, Legend } from './ui/Panels';
+import { ChapterText } from './ui/ChapterText';
+import { DayReadout } from './ui/DayReadout';
+import { Legend } from './ui/Legend';
 import { Timeline } from './ui/Timeline';
 
 // A full year plays in ~2 minutes.
 const DAYS_PER_SECOND = 3;
-// Keeps the action clear of the caption, legend and timeline panels.
+// Keeps the action clear of the chapter text and the timeline.
 const PADDING = { top: 20, bottom: 150, left: 380, right: 320 };
-const GROUP_COLORS = GENERATIONS.map((g) => g.color);
 
 const sim = buildModel();
 const cameraAt = cameraPath(KEYFRAMES);
@@ -67,6 +69,8 @@ export default function App() {
   // MapLibre reparses GeoJSON on a worker, so refresh the hotspots once per day, not per frame.
   const today = Math.floor(day);
   const hotspots = useMemo(() => sim.hotspots(today + 0.5), [today]);
+  const d = sim.activity.dominant[today];
+  const dominant = d === -1 ? null : (d as Generation);
 
   const frame = sim.frame(day, clock);
   const layers = buildLayers({ sim, frame, day, zoom: camera.zoom });
@@ -88,12 +92,14 @@ export default function App() {
         <DeckOverlay layers={layers} />
       </Map>
       <div className="vignette" />
-      <Caption day={day} frame={frame} />
+      <img className="logo" src={logo} width="107.484" height="24.0381" alt="Vizzuality" />
+      <ChapterText day={day} />
+      <DayReadout day={day} dominant={dominant} />
       <Legend />
       <Timeline
         activity={sim.activity}
-        colors={GROUP_COLORS}
         day={day}
+        dominant={dominant}
         playing={playing}
         onTogglePlay={togglePlay}
         onScrub={setDay}

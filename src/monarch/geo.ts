@@ -27,9 +27,9 @@ export const FLYWAY: { center: LngLat; spread: LngLat }[] = [
 ];
 
 export const PLACE_LABELS: { text: string; position: LngLat; size: number }[] = [
-  { text: 'MÉXICO', position: [-102.5, 23.5], size: 15 },
-  { text: 'ESTADOS UNIDOS', position: [-98, 39.5], size: 15 },
-  { text: 'CANADÁ', position: [-84, 51.5], size: 15 },
-  { text: 'Golfo de México', position: [-90.5, 25.2], size: 11 },
-  { text: 'Grandes Lagos', position: [-84.5, 45.2], size: 11 },
+  { text: 'MEXICO', position: [-102.5, 23.5], size: 15 },
+  { text: 'UNITED STATES', position: [-98, 39.5], size: 15 },
+  { text: 'CANADA', position: [-84, 51.5], size: 15 },
+  { text: 'Gulf of Mexico', position: [-90.5, 25.2], size: 11 },
+  { text: 'Great Lakes', position: [-84.5, 45.2], size: 11 },
 ];
