@@ -72,8 +72,8 @@ function wingStyle(rng: Rng) {
  * and then a climb; already in the air it drifts about at much the same height.
  */
 function hoverPoint(from: Point, rng: Rng, takingOff: boolean): Point {
-  const lift = takingOff ? 12 + rng() ** 2 * 70 : (rng() - 0.5) * 60;
-  return { x: clamp(from.x + (rng() - 0.5) * 120, -20, FRAME_WIDTH + 20), y: clamp(from.y - lift, -100, 60) };
+  const lift = takingOff ? 8 + rng() ** 2 * 45 : (rng() - 0.5) * 50;
+  return { x: clamp(from.x + (rng() - 0.5) * (takingOff ? 70 : 110), -20, FRAME_WIDTH + 20), y: clamp(from.y - lift, -100, 60) };
 }
 
 /** Sends `b` off on its next trip: onto a free letter if there is one, otherwise into the air. */
@@ -84,11 +84,9 @@ function nextTrip(b: Bird, perches: Perch[], taken: Perch[], rng: Rng, delay: nu
   return { ...b, perch, to: perches[perch], trip: b.trip + 1, delay };
 }
 
-/** Lands the flock on a freshly measured title, bringing in newcomers until there are FLOCK. */
-function settle(birds: Bird[], perches: Perch[], rng: Rng, landed: Set<string>): Bird[] {
-  const next: Bird[] = [];
-  for (const b of birds) next.push(nextTrip(b, perches, takenBy(next, perches), rng, landed.has(key(b)) ? rng() * 0.3 : 0));
-
+/** Brings in newcomers until there are FLOCK; those already in the air are landed separately. */
+function settle(birds: Bird[], perches: Perch[], rng: Rng): Bird[] {
+  const next = [...birds];
   for (let id = next.length; id < FLOCK; id++) {
     const anchor = perches.length ? pick(rng, perches) : { x: rng() * FRAME_WIDTH, y: 0 };
     const side = rng() < 0.5 ? 1 : -1;
@@ -142,7 +140,7 @@ export function ChapterButterflies({ title, heading, frameRef }: { title: string
     setBirds((current) =>
       current.map((b) => {
         const rng = mulberry32(b.seed + b.trip);
-        return nextTrip(b, [], [], rng, landed.current.has(key(b)) ? rng() * 0.15 : 0);
+        return nextTrip(b, [], [], rng, landed.current.has(key(b)) ? rng() * 0.45 : 0);
       }),
     );
   }, [title]);
@@ -151,7 +149,11 @@ export function ChapterButterflies({ title, heading, frameRef }: { title: string
     if (!ready) return;
     const rng = mulberry32(hash(title));
     rngRef.current = rng;
-    setBirds((current) => settle(current, listRef.current, rng, landed.current));
+    setBirds((current) => settle(current, listRef.current, rng));
+    // Those already in the air head for the new title one after another, not all at once.
+    const airborne = birdsRef.current.filter((b) => b.perch === null).sort(() => rng() - 0.5);
+    const timers = airborne.map((b, k) => setTimeout(() => setBirds((current) => land(current, b.id)), (k * 0.15 + rng() * 0.1) * 1000));
+    return () => timers.forEach(clearTimeout);
   }, [ready, title]);
 
   useEffect(() => {
@@ -173,6 +175,14 @@ export function ChapterButterflies({ title, heading, frameRef }: { title: string
     timer = setTimeout(move, FIRST_MOVE_MS + rng() * MOVE_JITTER_MS);
     return () => clearTimeout(timer);
   }, [ready, title]);
+
+  const land = (current: Bird[], id: number) => {
+    const b = current.find((c) => c.id === id);
+    if (!b || b.perch !== null) return current;
+    const all = listRef.current;
+    const next = nextTrip(b, all, takenBy(current, all, b), mulberry32(b.seed + b.trip), 0);
+    return next.perch === null ? current : current.map((c) => (c === b ? next : c));
+  };
 
   const arrive = (id: number, trip: number) => {
     setBirds((current) => {
@@ -218,7 +228,7 @@ function FlyingButterfly({ bird, to, onArrive }: { bird: Bird; to: Point; onArri
     const from = { x: x.get(), y: y.get() };
     const target = toRef.current;
     setFace(target.x >= from.x ? 1 : -1);
-    const f = flightPath(from, target, mulberry32(bird.seed + bird.trip), rotate.get());
+    const f = flightPath(from, target, mulberry32(bird.seed + bird.trip), { startRotate: rotate.get(), fromRest: landedTrip === bird.trip - 1 });
     const options = { duration: f.duration, delay: bird.delay, ease: 'linear' as const, times: f.times };
     const fade = bird.trip === 0 ? animate(opacity, [0, 1, 1], { ...options, times: [0, 0.15, 1] }) : animate(opacity, 1, { duration: 0.3 });
     const flight = [animate(x, f.x, options), animate(y, f.y, options), animate(rotate, f.rotate, options)];
