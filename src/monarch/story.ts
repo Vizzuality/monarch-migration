@@ -1,4 +1,33 @@
-import type { Chapter } from '../../data/calendar';
+import type { Chapter } from '../data/calendar';
+import type { RGB } from '../data/color';
+import { EGG_COLOR, GENERATIONS } from './generations';
+import type { LegendItem } from './types';
+
+export const EYEBROW = 'Danaus plexippus · Migración anual';
+export const TITLE = 'La gran migración';
+export const SUBTITLE = 'de la mariposa monarca';
+
+/** One entry per `Frame.stats` value. */
+export const STATS: { label: string; color: RGB }[] = [
+  { label: 'En vuelo', color: GENERATIONS[1].color },
+  { label: 'Huevos y orugas', color: EGG_COLOR },
+  { label: 'En los bosques', color: GENERATIONS[0].color },
+];
+
+export const LEGEND: { title: string; items: LegendItem[]; note: string } = {
+  title: 'Un año, cuatro generaciones',
+  items: [
+    ...GENERATIONS.map((g) => ({ name: g.name, tag: g.lifespan, description: g.description, color: g.color })),
+    {
+      name: 'Huevo → oruga → crisálida',
+      description:
+        'Unas 4 semanas sobre algodoncillo, de huevo crema a oruga y a crisálida jade. La bruma verde marca dónde crían; cada anillo, una eclosión.',
+      color: EGG_COLOR,
+      mark: 'small',
+    },
+  ],
+  note: 'Datos simulados a partir de la fenología publicada de la población oriental.',
+};
 
 /** Day-of-year chapters shown in the caption card. */
 export const CHAPTERS: Chapter[] = [

@@ -1,4 +1,4 @@
-import { gradient, type RGB } from '../../data/color';
+import { gradient, type RGB } from '../data/color';
 
 export type Generation = 0 | 1 | 2 | 3;
 

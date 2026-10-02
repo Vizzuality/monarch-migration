@@ -1,11 +1,13 @@
 import type { Layer } from '@deck.gl/core';
 import { TripsLayer } from '@deck.gl/geo-layers';
-import { PathLayer, ScatterplotLayer, TextLayer } from '@deck.gl/layers';
+import { ScatterplotLayer, TextLayer } from '@deck.gl/layers';
 
 import { tint } from '../data/color';
-import type { LngLat } from '../data/random';
 import type { Trip } from '../data/trips';
-import type { Frame, Migration, Ring, Simulation } from '../migrations/types';
+import { GENERATIONS } from '../monarch/generations';
+import { COLONIES, PLACE_LABELS } from '../monarch/geo';
+import { CLOSE_UP } from '../monarch/scene';
+import type { Frame, Ring, Simulation } from '../monarch/types';
 
 /**
  * Plain alpha blending: overlaps deepen toward the animals' own color
@@ -35,18 +37,17 @@ const TRAIL_STYLES = [
 
 // One layer per bucket and style. Out-of-window buckets stay mounted with
 // `visible: false` so their GPU buffers survive until they're needed again.
-// Ids carry the migration so a switch never diffs one herd's buffers against another's.
-function tripLayers(migration: Migration, sim: Simulation, day: number): Layer[] {
+function tripLayers(sim: Simulation, day: number): Layer[] {
   return TRAIL_STYLES.flatMap((style) =>
     sim.buckets.map(
       (bucket, i) =>
         new TripsLayer<Trip>({
-          id: `${migration.id}-${style.id}-${i}`,
+          id: `${style.id}-${i}`,
           data: bucket.trips,
           visible: day >= bucket.from && day <= bucket.to + style.trailLength,
           getPath: (d) => d.path,
           getTimestamps: (d) => d.timestamps,
-          getColor: (d) => tint(migration.groups[d.group], d.lineage),
+          getColor: (d) => tint(GENERATIONS[d.group].color, d.lineage),
           widthUnits: 'pixels',
           getWidth: style.width,
           capRounded: style.rounded,
@@ -62,14 +63,13 @@ function tripLayers(migration: Migration, sim: Simulation, day: number): Layer[]
 }
 
 interface LayerInput {
-  migration: Migration;
   sim: Simulation;
   frame: Frame;
   day: number;
   zoom: number;
 }
 
-export function buildLayers({ migration, sim, frame, day, zoom }: LayerInput): Layer[] {
+export function buildLayers({ sim, frame, day, zoom }: LayerInput): Layer[] {
   const points = {
     length: frame.length,
     attributes: {
@@ -79,13 +79,13 @@ export function buildLayers({ migration, sim, frame, day, zoom }: LayerInput): L
     },
   };
 
-  const [near, far] = migration.closeUp;
+  const [near, far] = CLOSE_UP;
   const closeUp = clamp01((zoom - near) / (far - near));
 
   return [
     new TextLayer({
-      id: `${migration.id}-place-labels`,
-      data: migration.placeLabels,
+      id: 'place-labels',
+      data: PLACE_LABELS,
       getPosition: (d) => d.position,
       getText: (d) => d.text,
       getSize: (d) => d.size,
@@ -96,19 +96,7 @@ export function buildLayers({ migration, sim, frame, day, zoom }: LayerInput): L
       updateTriggers: { getColor: closeUp },
     }),
 
-    new PathLayer<LngLat[]>({
-      id: `${migration.id}-rivers`,
-      data: migration.rivers ?? [],
-      getPath: (d) => d,
-      getColor: [120, 220, 255, 90],
-      widthUnits: 'pixels',
-      getWidth: 1.5,
-      jointRounded: true,
-      capRounded: true,
-      parameters: BLEND,
-    }),
-
-    ...tripLayers(migration, sim, day),
+    ...tripLayers(sim, day),
 
     new ScatterplotLayer<Ring>({
       id: 'rings',
@@ -124,7 +112,7 @@ export function buildLayers({ migration, sim, frame, day, zoom }: LayerInput): L
     }),
 
     new ScatterplotLayer({
-      id: 'animals',
+      id: 'butterflies',
       data: points,
       radiusUnits: 'pixels',
       opacity: 1,
@@ -132,8 +120,8 @@ export function buildLayers({ migration, sim, frame, day, zoom }: LayerInput): L
     }),
 
     new TextLayer({
-      id: `${migration.id}-site-labels`,
-      data: migration.sites,
+      id: 'colony-labels',
+      data: COLONIES,
       getPosition: (d) => d.position,
       getText: (d) => d.name.toUpperCase(),
       getSize: 11,
