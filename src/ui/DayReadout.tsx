@@ -62,20 +62,22 @@ export function DayReadout({ day, dominant }: { day: number; dominant: Generatio
         </span>{' '}
         <Slot value={month} roll={r} />
       </p>
-      <AnimatePresence mode="wait" initial={false}>
-        {dominant !== null && (
-          <motion.p
-            key={dominant}
-            className="readout-generation"
-            style={{ color: `rgb(${GENERATIONS[dominant].color})` }}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0, transition: { duration: 0.18, ease: 'easeOut' } }}
-            exit={{ opacity: 0, y: -6, transition: { duration: 0.12, ease: 'easeIn' } }}
-          >
-            {GENERATIONS[dominant].name}
-          </motion.p>
-        )}
-      </AnimatePresence>
+      {/* The line keeps its height with no Dominant generation, so the date above never moves. */}
+      <div className="readout-generation">
+        <AnimatePresence mode="wait" initial={false}>
+          {dominant !== null && (
+            <motion.p
+              key={dominant}
+              style={{ color: `rgb(${GENERATIONS[dominant].color})` }}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0, transition: { duration: 0.18, ease: 'easeOut' } }}
+              exit={{ opacity: 0, y: -6, transition: { duration: 0.12, ease: 'easeIn' } }}
+            >
+              {GENERATIONS[dominant].name}
+            </motion.p>
+          )}
+        </AnimatePresence>
+      </div>
     </div>
   );
 }
