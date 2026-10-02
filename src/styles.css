@@ -72,27 +72,20 @@ p {
   position: absolute;
   inset: 0;
   pointer-events: none;
-}
-
-/* Two layers: the mask that keeps the centre sharp would also cut the shade out of the middle. */
-.vignette::before,
-.vignette::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-}
-
-.vignette::before {
-  backdrop-filter: blur(5px);
-  -webkit-backdrop-filter: blur(5px);
-  mask-image: radial-gradient(ellipse 60% 60% at 50% 45%, transparent 55%, black 100%);
-}
-
-/* Stronger than Figma's four stacked 10% shades: over the live map those barely showed. */
-.vignette::after {
+  /* Stronger than Figma's four stacked 10% shades: over the live map those barely showed. */
   background:
     linear-gradient(to right, transparent calc(100% - 522px), rgba(0, 0, 0, 0.6)),
     radial-gradient(ellipse 75% 75% at 50% 45%, transparent 35%, rgba(0, 0, 0, 0.7));
+}
+
+/* The blur gets its own layer, so the mask that keeps the centre sharp leaves the shade alone. */
+.vignette::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  mask-image: radial-gradient(ellipse 60% 60% at 50% 45%, transparent 55%, black 100%);
 }
 
 .logo {
