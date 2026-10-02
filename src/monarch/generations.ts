@@ -8,27 +8,30 @@ export const GENERATIONS: { id: Generation; name: string; description: string; c
     id: 0,
     name: 'Super generation',
     description: 'Flies up to 4,000 km to a forest it has never seen, spends the winter there and heads north in spring.',
-    color: [255, 139, 56],
+    color: [236, 112, 34],
   },
   {
     id: 1,
     name: 'Generation 1',
     description: 'Born on milkweed in Texas and Oklahoma, it moves on into the Midwest.',
-    color: [162, 71, 247],
+    color: [232, 176, 74],
   },
   {
     id: 2,
     name: 'Generation 2',
     description: 'Reaches the Great Lakes, southern Canada and New England.',
-    color: [233, 216, 148],
+    color: [222, 122, 118],
   },
   {
     id: 3,
     name: 'Generation 3',
     description: 'Spreads across the north in high summer. Its offspring will be the next Super generation.',
-    color: [129, 120, 255],
+    color: [238, 218, 180],
   },
 ];
+
+// Palette taken from the butterfly and its host plant: wing orange, marigold,
+// milkweed blossom and the pale wing spots.
 
 /**
  * Colors an egg passes through on its way to becoming a butterfly, keyed by
