@@ -110,6 +110,7 @@ export function ChapterButterflies({ title, heading, frameRef }: { title: string
   const [birds, setBirds] = useState<Bird[]>([]);
   const birdsRef = useRef(birds);
   const landed = useRef(new Set<string>());
+  const waiting = useRef(new Set<number>());
   const rngRef = useRef<Rng | null>(null);
   // Perches measured on the outgoing title must not be used for the incoming one.
   const ready = perches.title === title && perches.list.length > 0;
@@ -150,10 +151,23 @@ export function ChapterButterflies({ title, heading, frameRef }: { title: string
     const rng = mulberry32(hash(title));
     rngRef.current = rng;
     setBirds((current) => settle(current, listRef.current, rng));
-    // Those already in the air head for the new title one after another, not all at once.
-    const airborne = birdsRef.current.filter((b) => b.perch === null).sort(() => rng() - 0.5);
-    const timers = airborne.map((b, k) => setTimeout(() => setBirds((current) => land(current, b.id)), (k * 0.15 + rng() * 0.1) * 1000));
-    return () => timers.forEach(clearTimeout);
+    // Those already in the air each pick their own moment to come down, most of them soon
+    // and a few after a good while, and keep fluttering until then.
+    const airborne = birdsRef.current.filter((b) => b.perch === null);
+    const timers = airborne.map((b) => {
+      waiting.current.add(b.id);
+      return setTimeout(
+        () => {
+          waiting.current.delete(b.id);
+          setBirds((current) => land(current, b.id));
+        },
+        (0.1 + rng() ** 1.4 * 3.4) * 1000,
+      );
+    });
+    return () => {
+      timers.forEach(clearTimeout);
+      waiting.current.clear();
+    };
   }, [ready, title]);
 
   useEffect(() => {
@@ -192,7 +206,7 @@ export function ChapterButterflies({ title, heading, frameRef }: { title: string
         landed.current.add(key(b));
         return current;
       }
-      const all = listRef.current;
+      const all = waiting.current.has(id) ? [] : listRef.current;
       const next = nextTrip(b, all, takenBy(current, all, b), mulberry32(b.seed + trip), 0);
       return current.map((c) => (c === b ? next : c));
     });
