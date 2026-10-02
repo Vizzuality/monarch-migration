@@ -16,7 +16,7 @@ const SAMPLES = 40;
  * the straight line between them bent into an arc over the top, with a sideways wobble
  * and a bank that die down on approach, so the butterfly slows and drops onto the perch.
  */
-export function flightPath(from: Point, to: Point, rng: Rng): Flight {
+export function flightPath(from: Point, to: Point, rng: Rng, startRotate = 0): Flight {
   const dx = to.x - from.x;
   const dy = to.y - from.y;
   const dist = Math.hypot(dx, dy);
@@ -34,7 +34,9 @@ export function flightPath(from: Point, to: Point, rng: Rng): Flight {
     flight.times.push(t);
     flight.x.push(from.x + dx * u + Math.sin(phase + u * 9) * wobble * calm);
     flight.y.push(from.y + dy * u - Math.sin(Math.PI * u) * arc + Math.cos(phase + u * 13) * wobble * 0.6 * calm);
-    flight.rotate.push(Math.cos(phase + u * 9) * bank * calm);
+    // Eases out of whatever bank it had, in case it changed course mid-air.
+    const blend = Math.min(1, t / 0.2);
+    flight.rotate.push(startRotate * (1 - blend) + Math.cos(phase + u * 9) * bank * calm * blend);
   }
   return flight;
 }

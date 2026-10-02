@@ -1,5 +1,5 @@
 import { AnimatePresence, motion, type Variants } from 'motion/react';
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 
 import { chapterAt } from '../data/calendar';
 import { CHAPTERS } from '../monarch/story';
@@ -18,27 +18,30 @@ const line: Variants = {
 
 export function ChapterText({ day }: { day: number }) {
   const chapter = chapterAt(CHAPTERS, day);
+  const frame = useRef<HTMLDivElement>(null);
+  const [heading, setHeading] = useState<HTMLHeadingElement | null>(null);
   return (
-    // "wait" lets the old chapter finish leaving, then shows only the latest one,
-    // however many were crossed while scrubbing.
-    <AnimatePresence mode="wait">
-      <Chapter key={chapter.title} title={chapter.title} body={chapter.body} />
-    </AnimatePresence>
+    // The butterflies sit outside the chapter so they stay on screen while it changes.
+    <div ref={frame} className="chapter">
+      {/* "wait" lets the old chapter finish leaving, then shows only the latest one,
+          however many were crossed while scrubbing. */}
+      <AnimatePresence mode="wait">
+        <Chapter key={chapter.title} title={chapter.title} body={chapter.body} headingRef={setHeading} />
+      </AnimatePresence>
+      <ChapterButterflies title={chapter.title} heading={heading} frameRef={frame} />
+    </div>
   );
 }
 
-function Chapter({ title, body }: { title: string; body: string }) {
-  const frame = useRef<HTMLDivElement>(null);
-  const heading = useRef<HTMLHeadingElement>(null);
+function Chapter({ title, body, headingRef }: { title: string; body: string; headingRef: (el: HTMLHeadingElement | null) => void }) {
   return (
-    <motion.div ref={frame} className="chapter" variants={block} initial="enter" animate="show" exit="leave">
-      <motion.h1 ref={heading} variants={line} custom={0}>
+    <motion.div variants={block} initial="enter" animate="show" exit="leave">
+      <motion.h1 ref={headingRef} variants={line} custom={0}>
         {title}
       </motion.h1>
       <motion.p variants={line} custom={0.08}>
         {body}
       </motion.p>
-      <ChapterButterflies title={title} titleRef={heading} frameRef={frame} />
     </motion.div>
   );
 }
