@@ -122,7 +122,7 @@ p {
 .readout {
   position: absolute;
   left: 63px;
-  bottom: 184px;
+  bottom: calc(var(--timeline-height) + 53px);
   display: flex;
   flex-direction: column;
   gap: 9px;
