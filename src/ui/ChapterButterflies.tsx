@@ -68,15 +68,16 @@ function wingStyle(rng: Rng) {
   } as CSSProperties;
 }
 
-/** Somewhere in the air near `from`, at about the same height. */
-function hoverPoint(from: Point, rng: Rng): Point {
-  return { x: clamp(from.x + (rng() - 0.5) * 110, -20, FRAME_WIDTH + 20), y: clamp(from.y - 10 - (rng() - 0.5) * 50, -100, 60) };
+/** Somewhere in the air near `from`, at about the same height, never far from the title. */
+function hoverPoint(from: Point, perches: Perch[], rng: Rng): Point {
+  const top = Math.min(...perches.map((p) => p.y));
+  return { x: clamp(from.x + (rng() - 0.5) * 110, -20, FRAME_WIDTH + 20), y: clamp(from.y - 10 - (rng() - 0.5) * 50, top - 110, top + 50) };
 }
 
 /** Sends `b` off on its next trip: onto a free letter if there is one, otherwise into the air. */
 function nextTrip(b: Bird, perches: Perch[], taken: Perch[], rng: Rng, delay: number, pace = 1): Bird {
   const free = freePerches(perches, taken);
-  if (!free.length) return { ...b, perch: null, to: hoverPoint(b.to, rng), trip: b.trip + 1, delay, pace };
+  if (!free.length) return { ...b, perch: null, to: hoverPoint(b.to, perches, rng), trip: b.trip + 1, delay, pace };
   const perch = pick(rng, free);
   return { ...b, perch, to: perches[perch], trip: b.trip + 1, delay, pace };
 }
@@ -107,7 +108,7 @@ function settle(birds: Bird[], { title, list: perches }: Perches, rng: Rng, land
  * straight from its letter to one on the new title. Any that find no free letter flutter
  * about until one frees up.
  */
-export function ChapterButterflies({ title, frameRef }: { title: string; frameRef: RefObject<HTMLElement | null> }) {
+export function ChapterButterflies({ title, body, anchorRef }: { title: string; body: string; anchorRef: RefObject<HTMLElement | null> }) {
   const reduced = useReducedMotion();
   const [perches, setPerches] = useState<Perches>({ title: '', list: [] });
   const [birds, setBirds] = useState<Bird[]>([]);
@@ -128,7 +129,7 @@ export function ChapterButterflies({ title, frameRef }: { title: string; frameRe
     if (reduced) return;
     let alive = true;
     const measure = () => {
-      if (alive && frameRef.current) setPerches({ title, list: measureTitle(title, frameRef.current) });
+      if (alive && anchorRef.current) setPerches({ title, list: measureTitle(title, body, anchorRef.current) });
     };
     document.fonts.ready.then(measure);
     window.addEventListener('resize', measure);
@@ -136,7 +137,7 @@ export function ChapterButterflies({ title, frameRef }: { title: string; frameRe
       alive = false;
       window.removeEventListener('resize', measure);
     };
-  }, [reduced, title, frameRef]);
+  }, [reduced, title, body, anchorRef]);
 
   useEffect(() => {
     if (!ready) return;

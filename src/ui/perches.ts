@@ -72,13 +72,17 @@ export function measurePerches(title: HTMLElement, frame: HTMLElement): Perch[] 
 }
 
 /** Perches for `text` as it will sit as the title in `frame`, before it is on screen. */
-export function measureTitle(text: string, frame: HTMLElement): Perch[] {
-  const probe = document.createElement('h1');
-  probe.textContent = text;
-  probe.style.cssText = 'position: absolute; top: 0; left: 0; right: 0; visibility: hidden';
-  frame.prepend(probe);
+export function measureTitle(title: string, body: string, anchor: HTMLElement): Perch[] {
+  // The whole chapter is laid out, since how far the title sits above `anchor` depends on
+  // how many lines the body wraps to.
+  const probe = document.createElement('div');
+  probe.style.cssText = 'position: absolute; left: 0; right: 0; bottom: 0; visibility: hidden';
+  const h1 = probe.appendChild(document.createElement('h1'));
+  h1.textContent = title;
+  probe.appendChild(document.createElement('p')).textContent = body;
+  anchor.prepend(probe);
   try {
-    return measurePerches(probe, frame);
+    return measurePerches(h1, anchor);
   } finally {
     probe.remove();
   }
