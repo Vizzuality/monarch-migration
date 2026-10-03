@@ -7,7 +7,7 @@ import './map/maplibre-worker';
 import logo from './assets/vizzuality.svg';
 import { YEAR_DAYS } from './data/calendar';
 import { MAP_STYLE } from './map/basemaps';
-import { cameraPath } from './map/camera';
+import { cameraPath, framingBoost } from './map/camera';
 import { DeckOverlay } from './map/DeckOverlay';
 import { buildLayers } from './map/layers';
 import { pathTiles, pinTileZoom, tilesSettled } from './map/preload';
@@ -35,6 +35,7 @@ const PRELOAD_PARALLEL_IMAGES = 256;
 
 const sim = buildModel();
 const cameraAt = cameraPath(KEYFRAMES);
+const viewportBoost = () => framingBoost(window.innerWidth, window.innerHeight, PADDING);
 
 export default function App() {
   const [day, setDay] = useState(START_DAY);
@@ -44,12 +45,15 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [progress, setProgress] = useState(0);
   const [previewDay, setPreviewDay] = useState(START_DAY);
+  const [zoomBoost, setZoomBoost] = useState(viewportBoost);
 
   const playingRef = useRef(playing);
   const scrubbingRef = useRef(false);
   const loadingRef = useRef(loading);
+  const zoomBoostRef = useRef(zoomBoost);
   playingRef.current = playing;
   loadingRef.current = loading;
+  zoomBoostRef.current = zoomBoost;
   const mapRef = useRef<MapRef>(null);
   const preloadRun = useRef(0);
 
@@ -67,6 +71,12 @@ export default function App() {
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
+  }, []);
+
+  useEffect(() => {
+    const onResize = () => setZoomBoost(viewportBoost());
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
   }, []);
 
   const togglePlay = useCallback(() => setPlaying((p) => !p), []);
@@ -93,7 +103,12 @@ export default function App() {
     const stale = () => run !== preloadRun.current;
 
     pinTileZoom(map);
-    const { samples, urls } = pathTiles(map, cameraAt, PADDING, START_DAY);
+    const boost = zoomBoostRef.current;
+    const framedAt = (d: number) => {
+      const cam = cameraAt(d);
+      return { ...cam, zoom: cam.zoom + boost };
+    };
+    const { samples, urls } = pathTiles(map, framedAt, PADDING, START_DAY);
     // Downloading first lets the walk below run at decode speed instead of network latency.
     await stashTiles(urls, (done) => setProgress((DOWNLOAD_SHARE * done) / urls.length));
     if (stale()) return;
@@ -121,7 +136,8 @@ export default function App() {
     setLoading(false);
   }, []);
 
-  const camera = cameraAt(loading ? previewDay : day);
+  const shot = cameraAt(loading ? previewDay : day);
+  const camera = { ...shot, zoom: shot.zoom + zoomBoost };
 
   // MapLibre reparses GeoJSON on a worker, so refresh the hotspots once per day, not per frame.
   const today = Math.floor(day);
@@ -130,7 +146,7 @@ export default function App() {
 
   const frame = sim.frame(day, clock);
   // Nothing to see under the loader, so spare it the trails.
-  const layers = loading ? [] : buildLayers({ sim, frame, day, zoom: camera.zoom });
+  const layers = loading ? [] : buildLayers({ sim, frame, day, zoom: shot.zoom });
 
   return (
     <div className="app">
