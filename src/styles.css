@@ -144,21 +144,9 @@ p {
   letter-spacing: 1.2px;
 }
 
-/* Butterflies perched on the chapter title */
-
-.butterfly-flight {
-  position: absolute;
-  top: 0;
-  left: 0;
-  will-change: transform;
-}
-
-.butterfly-flight > div {
-  position: absolute;
-}
+/* Butterflies: the model the flock canvases take their pictures from */
 
 .butterfly {
-  position: absolute;
   overflow: visible;
   fill: var(--cream);
 }
@@ -171,67 +159,8 @@ p {
   stroke-linejoin: round;
 }
 
-.butterfly-wings {
-  transform-box: view-box;
-  transform-origin: 72px 57px;
-}
-
 .butterfly-wings-far {
   opacity: 0.55;
-}
-
-.butterfly[data-pose='flying'] .butterfly-wings {
-  animation: var(--flight, wingbeat) var(--beat, 0.13s) ease-in-out infinite;
-}
-
-.butterfly[data-pose='flying'] .butterfly-wings-far {
-  animation-delay: var(--lag, -0.03s);
-}
-
-.butterfly[data-pose='perched'] .butterfly-wings-near {
-  animation: wing-rest var(--rest, 7s) ease-in-out var(--rest-delay, 0s) infinite;
-}
-
-@keyframes wingbeat {
-  0%,
-  100% {
-    transform: scaleY(1);
-  }
-  50% {
-    transform: scaleY(var(--depth, -0.7));
-  }
-}
-
-/* Three beats, then a glide on half-open wings. */
-@keyframes wingbeat-glide {
-  0%,
-  14%,
-  28%,
-  42%,
-  100% {
-    transform: scaleY(1);
-  }
-  7%,
-  21%,
-  35% {
-    transform: scaleY(var(--depth, -0.7));
-  }
-  50%,
-  86% {
-    transform: scaleY(0.3);
-  }
-}
-
-/* Mostly still, with one slow open and close per cycle. */
-@keyframes wing-rest {
-  0%,
-  80%,
-  100% {
-    transform: scaleY(1);
-  }
-  88% {
-    transform: scaleY(0.2);
-  }
 }
 
 /* Date and generation */

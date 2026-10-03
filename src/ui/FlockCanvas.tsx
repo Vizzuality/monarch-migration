@@ -1,7 +1,7 @@
 import { createContext, memo, useContext, useEffect, useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
 
-import { Butterfly, FEET_X, type Pose } from './Butterfly';
-import { useFlight, type Bird, type Body, type Flight } from './Flock';
+import { Butterfly, FEET_X, flap } from './Butterfly';
+import { useFlight, type Bird, type Body, type Flight, type Pose } from './Flock';
 import { flickScale, flyingScale, perchedScale } from './wings';
 
 interface Entry {
@@ -14,7 +14,7 @@ interface Entry {
 
 const Painting = createContext<Map<number, Entry> | null>(null);
 
-/** A butterfly drawn on the surrounding FlockCanvas instead of as an SVG of its own. */
+/** A butterfly drawn on the surrounding FlockCanvas. */
 export const CanvasButterfly: Body = memo(function CanvasButterfly({ bird, to, onArrive }) {
   const flight = useFlight(bird, to, onArrive);
   const painting = useContext(Painting)!;
@@ -73,8 +73,6 @@ async function bake(model: SVGSVGElement): Promise<Sprites> {
   const near = [...model.querySelectorAll('.butterfly-wings-near')].map((el) => [...live].indexOf(el));
   const far = [...model.querySelectorAll('.butterfly-wings-far')].map((el) => [...live].indexOf(el));
   const all = picture.querySelectorAll('*');
-  // The CSS wingbeat scales the wings about this point; see Butterfly.
-  const flap = (s: number) => `translate(72 57) scale(1 ${s}) translate(-72 -57)`;
 
   const render = async (nearScale: number, farScale: number) => {
     near.forEach((i) => all[i].setAttribute('transform', flap(nearScale)));
@@ -97,10 +95,10 @@ async function bake(model: SVGSVGElement): Promise<Sprites> {
 
 /**
  * One canvas covering the window that draws every CanvasButterfly inside it, placed relative
- * to `origin` as the SVG butterflies would be. `startled` is when the flock was last startled
- * into flicking its wings.
+ * to `origin`, with its feet on the point it flies to. `startled` is when the flock was last startled
+ * into flicking its wings, if ever.
  */
-export function FlockCanvas({ origin, startled, children }: { origin: RefObject<HTMLElement | null>; startled: number; children: ReactNode }) {
+export function FlockCanvas({ origin, startled = -Infinity, children }: { origin: RefObject<HTMLElement | null>; startled?: number; children: ReactNode }) {
   const [painting] = useState(() => new Map<number, Entry>());
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const modelRef = useRef<HTMLDivElement>(null);
@@ -148,7 +146,7 @@ export function FlockCanvas({ origin, startled, children }: { origin: RefObject<
         if (pose === 'flying') {
           sprite = sprites.flying[nearest(FLYING, flyingScale(wings, t))];
         } else {
-          // Each flicks a moment after the last, as in the CSS it replaces.
+          // Each flicks a moment after the last.
           const flick = flickScale((now - startledRef.current) / 1000 - (wings.restDelay * 0.12 - 0.02));
           sprite = sprites.perched[nearest(PERCHED, flick ?? perchedScale(wings, t))];
         }
@@ -169,7 +167,7 @@ export function FlockCanvas({ origin, startled, children }: { origin: RefObject<
       <canvas ref={canvasRef} className="flock-canvas" />
       {!sprites && (
         <div ref={modelRef} className="flock-model" aria-hidden>
-          <Butterfly pose="perched" size={88} />
+          <Butterfly size={88} />
         </div>
       )}
       {children}

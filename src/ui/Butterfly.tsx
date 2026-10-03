@@ -1,6 +1,4 @@
-import { useId, type CSSProperties, type ReactNode } from 'react';
-
-export type Pose = 'flying' | 'perched';
+import { useId, type ReactNode } from 'react';
 
 // Side view of a monarch facing right, wings folded up over a near-level body. The wings
 // and body are drawn hanging from a twig and tilted upright; legs and antennae are drawn
@@ -9,7 +7,7 @@ const X0 = 12;
 const Y0 = -21;
 const W = 88;
 const H = 101;
-export const ASPECT = H / W;
+const ASPECT = H / W;
 export const FEET_X = (75 - X0) / W;
 const TILT = 'rotate(40 75 60)';
 
@@ -50,9 +48,12 @@ function WingMask({ id, wing, margin, veins, spots, extra, gap }: { id: string; 
   );
 }
 
-// A wingbeat swings the wings about the body's long axis. The CSS scaleY runs in a frame
-// where that axis is level, so the wings fold up over the back and sweep down below it.
+// A wingbeat swings the wings about the body's long axis. The scale runs in a frame where
+// that axis is level, so the wings fold up over the back and sweep down below it.
 const BODY_ANGLE = 63.7;
+
+/** The transform that beats a `.butterfly-wings` group to `scale`: 1 open above the back, negative below it. */
+export const flap = (scale: number) => `translate(72 57) scale(1 ${scale}) translate(-72 -57)`;
 
 function Wings({ id, className }: { id: string; className: string }) {
   return (
@@ -67,10 +68,10 @@ function Wings({ id, className }: { id: string; className: string }) {
   );
 }
 
-export function Butterfly({ pose, size, style }: { pose: Pose; size: number; style?: CSSProperties }) {
+export function Butterfly({ size }: { size: number }) {
   const id = useId().replace(/:/g, '');
   return (
-    <svg className="butterfly" data-pose={pose} viewBox={`0 0 ${W} ${H}`} width={size} height={size * ASPECT} style={style} aria-hidden>
+    <svg className="butterfly" viewBox={`0 0 ${W} ${H}`} width={size} height={size * ASPECT} aria-hidden>
       <defs>
         <WingMask
           id={`${id}-fore`}

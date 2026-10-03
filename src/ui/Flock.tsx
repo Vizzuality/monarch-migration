@@ -1,11 +1,12 @@
-import { animate, motion, useMotionValue, type MotionValue } from 'motion/react';
-import { memo, useCallback, useEffect, useRef, useState, type ComponentType } from 'react';
+import { animate, useMotionValue, type MotionValue } from 'motion/react';
+import { useCallback, useEffect, useRef, useState, type ComponentType } from 'react';
 
 import { mulberry32, type Rng } from '../data/random';
-import { ASPECT, Butterfly, FEET_X, type Pose } from './Butterfly';
 import { flightPath } from './flight';
 import type { Point, Spot } from './perches';
-import { randomWings, wingVars, type Wings } from './wings';
+import { randomWings, type Wings } from './wings';
+
+export type Pose = 'flying' | 'perched';
 
 const FIRST_MOVE_MS = 6500;
 const MOVE_EVERY_MS = 6000;
@@ -120,8 +121,8 @@ export function Flock<P extends Spot>({
   sizes = [8, 12],
   stagger = 0.35,
   departure = 0.3,
-  body: Body = DomButterfly,
-}: { roost: Roost<P> | null; body?: Body } & Partial<Options> & Pick<Options, 'size'>) {
+  body: Body,
+}: { roost: Roost<P> | null; body: Body } & Partial<Options> & Pick<Options, 'size'>) {
   const [birds, setBirds] = useState<Bird[]>([]);
   const birdsRef = useRef(birds);
   birdsRef.current = birds;
@@ -244,14 +245,3 @@ export function useFlight(bird: Bird, to: Spot, onArrive: (id: number, trip: num
 
   return { x, y, rotate, opacity, face, pose };
 }
-
-const DomButterfly = memo(function DomButterfly({ bird, to, onArrive }: { bird: Bird; to: Spot; onArrive: (id: number, trip: number) => void }) {
-  const { x, y, rotate, opacity, face, pose } = useFlight(bird, to, onArrive);
-  return (
-    <motion.div className="butterfly-flight" style={{ x, y, rotate, opacity }}>
-      <div style={{ transform: `scaleX(${face})` }}>
-        <Butterfly pose={pose} size={bird.size} style={{ left: -FEET_X * bird.size, top: 1 - bird.size * ASPECT, ...wingVars(bird.wings) }} />
-      </div>
-    </motion.div>
-  );
-});

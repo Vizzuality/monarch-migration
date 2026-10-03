@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState, type RefObject } from 'react';
 
 import type { Rng } from '../data/random';
 import { Flock, type Roost } from './Flock';
+import { CanvasButterfly, FlockCanvas } from './FlockCanvas';
 import { isFree, measureTitle, type Perch, type Point } from './perches';
 
 const FLOCK = 8;
@@ -64,5 +65,9 @@ export function ChapterButterflies({ title, body, anchorRef }: { title: string; 
   );
 
   if (reduced) return null;
-  return <Flock roost={roost} size={FLOCK} />;
+  return (
+    <FlockCanvas origin={anchorRef}>
+      <Flock roost={roost} size={FLOCK} body={CanvasButterfly} />
+    </FlockCanvas>
+  );
 }

@@ -1,5 +1,3 @@
-import type { CSSProperties } from 'react';
-
 import type { Rng } from '../data/random';
 
 /** How one butterfly beats its wings, in seconds and wing scales. */
@@ -30,29 +28,17 @@ export function randomWings(rng: Rng): Wings {
   };
 }
 
-/** The custom properties the wingbeat keyframes in styles.css read. */
-export function wingVars(w: Wings) {
-  return {
-    '--flight': w.glides ? 'wingbeat-glide' : 'wingbeat',
-    '--beat': `${w.beat}s`,
-    '--depth': w.depth,
-    '--lag': `${w.lag}s`,
-    '--rest': `${w.rest}s`,
-    '--rest-delay': `${w.restDelay}s`,
-  } as CSSProperties;
-}
-
 type Keyframes = [at: number, scale: number][];
 
-// The same keyframes as wingbeat, wingbeat-glide and wing-rest in styles.css, with the
-// depth left as NaN to be filled in per butterfly.
+// A steady beat; three beats then a glide on half-open wings; a perched butterfly's one slow
+// open and close; and the start of a flick. NaN is the butterfly's own depth.
 const BEAT: Keyframes = [[0, 1], [0.5, NaN], [1, 1]];
 const GLIDE: Keyframes = [[0, 1], [0.07, NaN], [0.14, 1], [0.21, NaN], [0.28, 1], [0.35, NaN], [0.42, 1], [0.5, 0.3], [0.86, 0.3], [1, 1]];
 const REST: Keyframes = [[0, 1], [0.8, 1], [0.88, 0.2], [1, 1]];
 const FLICK: Keyframes = [[0, 1], [0.45, 0.1], [1, 1]];
 export const FLICK_SECONDS = 0.45;
 
-// Close to CSS ease-in-out, which runs between every pair of keyframes.
+// Close to CSS ease-in-out, run between every pair of keyframes.
 const ease = (t: number) => t * t * (3 - 2 * t);
 
 function play(frames: Keyframes, t: number, depth: number) {
