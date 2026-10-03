@@ -1,10 +1,11 @@
-import { animate, motion, useMotionValue } from 'motion/react';
-import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { animate, motion, useMotionValue, type MotionValue } from 'motion/react';
+import { memo, useCallback, useEffect, useRef, useState, type ComponentType } from 'react';
 
 import { mulberry32, type Rng } from '../data/random';
 import { ASPECT, Butterfly, FEET_X, type Pose } from './Butterfly';
 import { flightPath } from './flight';
 import type { Point, Spot } from './perches';
+import { randomWings, wingVars, type Wings } from './wings';
 
 const FIRST_MOVE_MS = 6500;
 const MOVE_EVERY_MS = 6000;
@@ -27,7 +28,7 @@ export interface Roost<P extends Spot = Spot> {
   air: (from: Point, rng: Rng) => Point;
 }
 
-interface Bird {
+export interface Bird {
   id: number;
   seed: number;
   trip: number;
@@ -41,8 +42,11 @@ interface Bird {
   /** How many times longer than usual the trip takes, along a wider, lazier path. */
   pace: number;
   size: number;
-  wings: CSSProperties;
+  wings: Wings;
 }
+
+/** How a flock shows each of its butterflies. It calls `onArrive` at the end of every trip. */
+export type Body = ComponentType<{ bird: Bird; to: Spot; onArrive: (id: number, trip: number) => void }>;
 
 const key = (b: Bird) => `${b.id}:${b.trip}`;
 
@@ -60,20 +64,6 @@ function freePerches<P extends Spot>({ perches, free }: Roost<P>, taken: P[]) {
 
 function takenBy<P extends Spot>(birds: Bird[], perches: P[], except?: Bird) {
   return birds.filter((b) => b !== except && b.perch !== null).map((b) => perches[b.perch!]);
-}
-
-// Monarchs mix bursts of flapping with glides, so some butterflies flap and glide while
-// others flap steadily. Each one also gets its own beat and stroke depth.
-function wingStyle(rng: Rng) {
-  const glides = rng() < 0.6;
-  return {
-    '--flight': glides ? 'wingbeat-glide' : 'wingbeat',
-    '--beat': `${glides ? 0.9 + rng() * 0.5 : 0.18 + rng() * 0.12}s`,
-    '--depth': -0.45 - rng() * 0.4,
-    '--lag': `${-0.02 - rng() * 0.03}s`,
-    '--rest': `${5 + rng() * 4}s`,
-    '--rest-delay': `${1 + rng() * 3}s`,
-  } as CSSProperties;
 }
 
 /** Sends `b` off on its next trip: onto a free perch if there is one, otherwise into the air. */
@@ -112,7 +102,7 @@ function settle<P extends Spot>(birds: Bird[], roost: Roost<P>, { size, sizes, s
     const off = 26 + rng() * 26;
     const tilt = ((anchor.angle ?? 0) * Math.PI) / 180;
     const spawn = { x: anchor.x + along * Math.cos(tilt) + off * Math.sin(tilt), y: anchor.y + along * Math.sin(tilt) - off * Math.cos(tilt) };
-    const bird: Bird = { id, seed: hash(`${id}`), trip: -1, perch: null, on: roost.key, to: spawn, spawn, delay: 0, pace: 1, size: sizes[0] + rng() * (sizes[1] - sizes[0]), wings: wingStyle(rng) };
+    const bird: Bird = { id, seed: hash(`${id}`), trip: -1, perch: null, on: roost.key, to: spawn, spawn, delay: 0, pace: 1, size: sizes[0] + rng() * (sizes[1] - sizes[0]), wings: randomWings(rng) };
     next.push(nextTrip(bird, roost, takenBy(next, perches), rng, (id - birds.length) * stagger + rng() * 0.25));
   }
   return next;
@@ -124,7 +114,14 @@ function settle<P extends Spot>(birds: Bird[], roost: Roost<P>, { size, sizes, s
  * straight from its perch to one on the new roost. Any that find no free perch flutter
  * about until one frees up. While `roost` is null they finish their trips and wait.
  */
-export function Flock<P extends Spot>({ roost, size, sizes = [8, 12], stagger = 0.35, departure = 0.3 }: { roost: Roost<P> | null } & Partial<Options> & Pick<Options, 'size'>) {
+export function Flock<P extends Spot>({
+  roost,
+  size,
+  sizes = [8, 12],
+  stagger = 0.35,
+  departure = 0.3,
+  body: Body = DomButterfly,
+}: { roost: Roost<P> | null; body?: Body } & Partial<Options> & Pick<Options, 'size'>) {
   const [birds, setBirds] = useState<Bird[]>([]);
   const birdsRef = useRef(birds);
   birdsRef.current = birds;
@@ -134,6 +131,8 @@ export function Flock<P extends Spot>({ roost, size, sizes = [8, 12], stagger = 
   if (roost) roostRef.current = roost;
   const list = roost?.perches ?? [];
   const ready = roost !== null && list.length > 0;
+  const readyRef = useRef(ready);
+  readyRef.current = ready;
 
   useEffect(() => {
     const current = roostRef.current;
@@ -163,7 +162,8 @@ export function Flock<P extends Spot>({ roost, size, sizes = [8, 12], stagger = 
     return () => clearTimeout(timer);
   }, [ready, roost?.key]);
 
-  const arrive = (id: number, trip: number) => {
+  // Stable, so a butterfly only renders again when its own trip changes.
+  const arrive = useCallback((id: number, trip: number) => {
     setBirds((birds) => {
       const b = birds.find((c) => c.id === id);
       if (!b || b.trip !== trip) return birds;
@@ -172,21 +172,32 @@ export function Flock<P extends Spot>({ roost, size, sizes = [8, 12], stagger = 
         return birds;
       }
       const current = roostRef.current!;
-      const next = nextTrip(b, { ...current, perches: ready ? current.perches : [] }, takenBy(birds, current.perches, b), mulberry32(b.seed + trip), 0);
+      const next = nextTrip(b, { ...current, perches: readyRef.current ? current.perches : [] }, takenBy(birds, current.perches, b), mulberry32(b.seed + trip), 0);
       return birds.map((c) => (c === b ? next : c));
     });
-  };
+  }, []);
 
   return (
     <>
       {birds.map((b) => (
-        <FlyingButterfly key={b.id} bird={b} to={b.perch !== null && b.on === roost?.key ? (list[b.perch] ?? b.to) : b.to} onArrive={() => arrive(b.id, b.trip)} />
+        <Body key={b.id} bird={b} to={b.perch !== null && b.on === roost?.key ? (list[b.perch] ?? b.to) : b.to} onArrive={arrive} />
       ))}
     </>
   );
 }
 
-function FlyingButterfly({ bird, to, onArrive }: { bird: Bird; to: Spot; onArrive: () => void }) {
+export interface Flight {
+  x: MotionValue<number>;
+  y: MotionValue<number>;
+  rotate: MotionValue<number>;
+  opacity: MotionValue<number>;
+  /** 1 facing right, -1 facing left. */
+  face: number;
+  pose: Pose;
+}
+
+/** Flies `bird` along each new trip it is sent on, ending on `to`. */
+export function useFlight(bird: Bird, to: Spot, onArrive: (id: number, trip: number) => void): Flight {
   const x = useMotionValue(bird.spawn.x);
   const y = useMotionValue(bird.spawn.y);
   const rotate = useMotionValue(0);
@@ -214,7 +225,7 @@ function FlyingButterfly({ bird, to, onArrive }: { bird: Bird; to: Spot; onArriv
     Promise.all(flight).then(() => {
       if (stopped) return;
       if (bird.perch !== null) setLandedTrip(bird.trip);
-      onArriveRef.current();
+      onArriveRef.current(bird.id, bird.trip);
     });
     return () => {
       stopped = true;
@@ -231,11 +242,16 @@ function FlyingButterfly({ bird, to, onArrive }: { bird: Bird; to: Spot; onArriv
     rotate.set(to.angle ?? 0);
   }, [pose, to.x, to.y, to.angle]);
 
+  return { x, y, rotate, opacity, face, pose };
+}
+
+const DomButterfly = memo(function DomButterfly({ bird, to, onArrive }: { bird: Bird; to: Spot; onArrive: (id: number, trip: number) => void }) {
+  const { x, y, rotate, opacity, face, pose } = useFlight(bird, to, onArrive);
   return (
     <motion.div className="butterfly-flight" style={{ x, y, rotate, opacity }}>
       <div style={{ transform: `scaleX(${face})` }}>
-        <Butterfly pose={pose} size={bird.size} style={{ left: -FEET_X * bird.size, top: 1 - bird.size * ASPECT, ...bird.wings }} />
+        <Butterfly pose={pose} size={bird.size} style={{ left: -FEET_X * bird.size, top: 1 - bird.size * ASPECT, ...wingVars(bird.wings) }} />
       </div>
     </motion.div>
   );
-}
+});
