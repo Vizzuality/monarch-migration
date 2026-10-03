@@ -8,6 +8,11 @@ const SCAN_STEP = 0.1; // days
 
 /** Makes every pinned source draw its one zoom, near the camera or on the horizon. */
 export function pinTileZoom(map: MaplibreMap) {
+  // MapLibre only asks a source for its tile zoom past ~60° of pitch, and the
+  // camera stays below that. Internal API, like the transform in `pathTiles`.
+  const camera = (map as unknown as { _camera: { transform: Transform } })._camera;
+  const details = Object.getPrototypeOf(camera.transform.getCoveringTilesDetailsProvider());
+  details.allowVariableZoom = () => true;
   for (const { id, zoom } of PINNED_SOURCES) {
     const source = map.getSource(id);
     if (source) source.calculateTileZoom = () => zoom;
@@ -28,7 +33,6 @@ export function pathTiles(map: MaplibreMap, cameraAt: (day: number) => Camera, p
   const camera = (map as unknown as { _camera: { transform: Transform } })._camera;
   const live = camera.transform;
   const probe = live.clone();
-  const terrain = map.terrain;
   const views: { day: number; urls: string[] }[] = [];
 
   camera.transform = probe;
@@ -41,12 +45,11 @@ export function pathTiles(map: MaplibreMap, cameraAt: (day: number) => Camera, p
       probe.setZoom(cam.zoom);
       probe.setPitch(cam.pitch);
       probe.setBearing(cam.bearing);
-      if (terrain) probe.setElevation(terrain.getElevationForLngLat(probe.center, probe as never));
 
       const urls: string[] = [];
       for (const { zoom, tiles } of PINNED_SOURCES) {
-        // `terrain` is read but missing from the public type; without it tiles behind hills get culled.
-        const options = { tileSize: 256, minzoom: 0, maxzoom: zoom, terrain, calculateTileZoom: () => zoom } as CoveringTilesOptions;
+        // `calculateTileZoom` is read but missing from the public type.
+        const options = { tileSize: 256, minzoom: 0, maxzoom: zoom, calculateTileZoom: () => zoom } as CoveringTilesOptions;
         for (const tile of map.coveringTiles(options)) urls.push(tileUrl(tiles, tile));
       }
       views.push({ day, urls });
@@ -93,7 +96,7 @@ interface Transform {
   setZoom(z: number): void;
   setPitch(p: number): void;
   setBearing(b: number): void;
-  setElevation(e: number): void;
+  getCoveringTilesDetailsProvider(): { allowVariableZoom(...args: unknown[]): boolean };
 };
 
 const tileUrl = (template: string, { canonical: { z, x, y } }: OverscaledTileID) =>
