@@ -9,7 +9,6 @@ import { MAP_STYLE } from './map/basemaps';
 import { cameraPath } from './map/camera';
 import { DeckOverlay } from './map/DeckOverlay';
 import { buildLayers } from './map/layers';
-import type { Generation } from './monarch/generations';
 import { buildModel } from './monarch/model';
 import { HOTSPOT_PAINT, KEYFRAMES, START_DAY } from './monarch/scene';
 import { ChapterText } from './ui/ChapterText';
@@ -69,8 +68,7 @@ export default function App() {
   // MapLibre reparses GeoJSON on a worker, so refresh the hotspots once per day, not per frame.
   const today = Math.floor(day);
   const hotspots = useMemo(() => sim.hotspots(today + 0.5), [today]);
-  const d = sim.activity.dominant[today];
-  const dominant = d === -1 ? null : (d as Generation);
+  const dominant = sim.activity.dominant[today];
 
   const frame = sim.frame(day, clock);
   const layers = buildLayers({ sim, frame, day, zoom: camera.zoom });

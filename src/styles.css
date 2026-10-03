@@ -427,7 +427,7 @@ p {
   background: var(--timeline);
 }
 
-/* The halo's dot sits 9.5px above the bar, as in the design. */
+/* The dot sits 9.5px above the bar, as in the design. */
 .playhead {
   position: absolute;
   top: -68px;
@@ -436,10 +436,10 @@ p {
   pointer-events: none;
 }
 
-.halo {
+.dot {
   position: absolute;
-  top: 0;
-  left: -58.5px;
+  top: 52px;
+  left: -6.5px;
 }
 
 .playhead::after {

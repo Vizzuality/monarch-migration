@@ -1,6 +1,7 @@
 import type { RGB } from '../data/color';
 import type { LngLat } from '../data/random';
 import type { TripBucket } from '../data/trips';
+import type { Generation } from './generations';
 
 export interface Ring {
   position: LngLat;
@@ -19,12 +20,8 @@ export interface Frame {
 }
 
 export interface Activity {
-  /** How many butterflies of each generation are on the move each day. */
-  moving: Float32Array[];
-  /** The Dominant generation of each day, or -1 when there is none. */
-  dominant: Int8Array;
-  /** 0–1 per day: how strongly the Dominant generation is on the move, relative to its own peak. */
-  strength: Float32Array;
+  /** The Dominant generation of each day. */
+  dominant: Generation[];
 }
 
 export interface Simulation {

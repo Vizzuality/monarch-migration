@@ -6,12 +6,13 @@ import { dateOf, MONTH_LENGTHS, MONTHS, YEAR_DAYS } from '../data/calendar';
 import { GENERATIONS, type Generation } from '../monarch/generations';
 import type { Activity } from '../monarch/types';
 
-const NEUTRAL = '#e4d2ba';
+// Days a change of Dominant generation takes to blend on the bar, centred on the change.
+const FADE_DAYS = 14;
 
 interface Props {
   activity: Activity;
   day: number;
-  dominant: Generation | null;
+  dominant: Generation;
   playing: boolean;
   onTogglePlay: () => void;
   onScrub: (day: number) => void;
@@ -19,26 +20,23 @@ interface Props {
   onScrubEnd: () => void;
 }
 
-/** One color stop per day: the Dominant generation's color, as opaque as it is strong. */
-function barGradient({ dominant, strength }: Activity) {
-  const stops: string[] = [];
-  let last = GENERATIONS[0].color;
-  for (let d = 0; d < YEAR_DAYS; d++) {
-    const g = dominant[d];
-    // Days with no Dominant generation fade the neighbour's color out instead of going through grey.
-    const color = g === -1 ? last : GENERATIONS[g].color;
-    last = color;
-    stops.push(`rgba(${color}, ${strength[d].toFixed(3)}) ${(((d + 0.5) / YEAR_DAYS) * 100).toFixed(3)}%`);
+/** Each Dominant generation's color, blended into the next one around the day it takes over. */
+function barGradient({ dominant }: Activity) {
+  const at = (d: number) => `${((d / YEAR_DAYS) * 100).toFixed(3)}%`;
+  const stops = [`rgb(${GENERATIONS[dominant[0]].color}) 0%`];
+  for (let d = 1; d < YEAR_DAYS; d++) {
+    if (dominant[d] === dominant[d - 1]) continue;
+    stops.push(`rgb(${GENERATIONS[dominant[d - 1]].color}) ${at(d - FADE_DAYS / 2)}`);
+    stops.push(`rgb(${GENERATIONS[dominant[d]].color}) ${at(d + FADE_DAYS / 2)}`);
   }
+  stops.push(`rgb(${GENERATIONS[dominant[YEAR_DAYS - 1]].color}) 100%`);
   return `linear-gradient(to right, ${stops.join(', ')})`;
 }
 
-function PlayheadHalo() {
+function PlayheadDot() {
   return (
-    <svg className="halo" width="117" height="68" viewBox="0 0 117 68" aria-hidden="true">
-      <circle cx="58.5" cy="58.5" r="58.5" fill="currentColor" opacity="0.1" />
-      <circle cx="58.5" cy="58.5" r="21.5" fill="currentColor" opacity="0.2" />
-      <circle cx="58.5" cy="58.5" r="4.5" fill="currentColor" stroke="white" strokeWidth="2" />
+    <svg className="dot" width="13" height="13" viewBox="0 0 13 13" aria-hidden="true">
+      <circle cx="6.5" cy="6.5" r="4.5" fill="currentColor" stroke="white" strokeWidth="2" />
     </svg>
   );
 }
@@ -63,7 +61,7 @@ export function Timeline({ activity, day, dominant, playing, onTogglePlay, onScr
   };
 
   const { date, month } = dateOf(day);
-  const color = dominant === null ? NEUTRAL : `rgb(${GENERATIONS[dominant].color})`;
+  const color = `rgb(${GENERATIONS[dominant].color})`;
 
   return (
     <div className="timeline">
@@ -119,7 +117,7 @@ export function Timeline({ activity, day, dominant, playing, onTogglePlay, onScr
           animate={{ color }}
           transition={{ duration: 0.4 }}
         >
-          <PlayheadHalo />
+          <PlayheadDot />
         </motion.div>
       </div>
     </div>

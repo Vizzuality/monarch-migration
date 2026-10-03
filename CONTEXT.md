@@ -17,5 +17,5 @@ The long-lived generation born in late summer that flies south, overwinters in M
 _Avoid_: First generation, Methuselah generation
 
 **Dominant generation**:
-The Generation with the most butterflies on the move on a given day. On days with no butterflies on the move there is none.
+The Generation most of the population belongs to on a given day. Eggs and caterpillars count towards their mother's Generation until they hatch, and butterflies resting in the colonies belong to the Super generation, so there is a Dominant generation every day of the year.
 _Avoid_: Current generation, active generation
