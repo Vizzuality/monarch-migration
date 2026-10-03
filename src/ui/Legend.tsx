@@ -27,7 +27,7 @@ const BUTTON = 66;
 const CARD_OVERHANG = 15;
 const CARD_RADIUS = 52;
 
-const BALL = ballSpots({ x: BUTTON / 2, y: BUTTON / 2 }, 24, 125, 10);
+const BALL = ballSpots({ x: BUTTON / 2, y: BUTTON / 2 }, 28, 125, 10);
 
 const nearby = (from: Point, rng: () => number) => ({ x: from.x + (rng() - 0.5) * 60, y: from.y + (rng() - 0.5) * 60 });
 

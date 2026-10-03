@@ -6,15 +6,14 @@ const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
 const facing = (nx: number, ny: number) => (Math.atan2(nx, -ny) * 180) / Math.PI;
 
 /**
- * `count` spots over a disc of `radius` around `center`, each facing away from the middle, so
- * butterflies standing on them make a ball of wings pointing every way. A butterfly reaches
- * `reach` out from its feet, so each spot sits back by half that: the wings, not the feet,
- * fill its place, and those in the middle stand across it. The spots crowd towards the
- * middle, which every butterfly leans away from.
+ * `count` spots spread evenly over a disc of `radius` around `center`, each facing away from
+ * the middle, so butterflies standing on them make a ball of wings pointing every way. A
+ * butterfly reaches `reach` out from its feet, so each spot sits back by half that: the
+ * wings, not the feet, fill its place, and those in the middle stand across it.
  */
 export function ballSpots(center: Point, radius: number, count: number, reach: number): Spot[] {
   return Array.from({ length: count }, (_, i) => {
-    const r = radius * ((i + 0.5) / count) - reach / 2;
+    const r = radius * Math.sqrt((i + 0.5) / count) - reach / 2;
     const a = i * GOLDEN_ANGLE;
     const nx = Math.cos(a);
     const ny = Math.sin(a);

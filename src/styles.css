@@ -330,9 +330,10 @@ p {
   pointer-events: none;
 }
 
-/* Hovering the button startles the flock: every perched butterfly opens and shuts its wings. */
+/* Hovering the button startles the flock: every perched butterfly opens and shuts its wings,
+   each a moment after the last, borrowing its own rest delay so no two flick together. */
 .legend:has(.legend-button:hover) .butterfly[data-pose='perched'] .butterfly-wings-near {
-  animation: wing-flick 0.45s ease-in-out;
+  animation: wing-flick 0.45s ease-in-out calc(var(--rest-delay, 0s) * 0.12 - 0.02s);
 }
 
 @keyframes wing-flick {
