@@ -49,16 +49,16 @@ export function DayReadout({ day, dominant }: { day: number; dominant: Generatio
   const today = Math.floor(day);
   const r = useRoll(today);
   const { date, month } = dateOf(today);
-  // Keyed from the right, so the units digit keeps its slot when the tens appear.
-  const digits = String(date).split('').reverse();
+  // Always two digits, so the month doesn't shift when the date reaches 10.
+  const digits = String(date).padStart(2, '0').split('');
 
   return (
     <div className="readout">
       <p className="readout-date" aria-label={`${date} ${month}`}>
         <span className="digits">
-          {digits
-            .map((digit, place) => <Slot key={place} value={digit} roll={r} />)
-            .reverse()}
+          {digits.map((digit, place) => (
+            <Slot key={place} value={digit} roll={r} />
+          ))}
         </span>{' '}
         <Slot value={month} roll={r} />
       </p>
