@@ -8,6 +8,7 @@ import bookHover from '../assets/book-hover.svg';
 import bookOpen from '../assets/book-open.svg';
 import { GENERATIONS } from '../monarch/generations';
 import { Flock, type Roost } from './Flock';
+import { CanvasButterfly, FlockCanvas } from './FlockCanvas';
 import { apart, ballSpots, outlineSpots } from './legend-roosts';
 import type { Point } from './perches';
 
@@ -36,6 +37,7 @@ export function Legend() {
   const [open, setOpen] = useState(false);
   // Every open and close gets its own key, so the flock doesn't fly the same way each time.
   const [toggles, setToggles] = useState(0);
+  const [startled, setStartled] = useState(-Infinity);
   const [cardSize, setCardSize] = useState<{ width: number; height: number } | null>(null);
   const ref = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
@@ -94,9 +96,9 @@ export function Legend() {
       </AnimatePresence>
       {/* Between the card and the button: they stand on the card's outline and huddle under the book. */}
       {!reduced && (
-        <div className="legend-flock">
-          <Flock roost={roost} size={FLOCK} sizes={[7, 11]} stagger={0.05} departure={0.5} />
-        </div>
+        <FlockCanvas origin={ref} startled={startled}>
+          <Flock roost={roost} size={FLOCK} sizes={[7, 11]} stagger={0.05} departure={0.5} body={CanvasButterfly} />
+        </FlockCanvas>
       )}
       <button
         className={`legend-button${reduced ? '' : ' bare'}${open ? ' open' : ''}`}
@@ -104,6 +106,7 @@ export function Legend() {
         aria-expanded={open}
         aria-controls="legend-card"
         onClick={() => toggle(!open)}
+        onPointerEnter={() => setStartled(performance.now())}
       >
         {reduced ? (
           <>
