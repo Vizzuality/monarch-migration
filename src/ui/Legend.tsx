@@ -2,8 +2,6 @@ import { AnimatePresence, motion, useReducedMotion, type Variants } from 'motion
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import bookClosed from '../assets/book-closed.svg';
-import glyphClosed from '../assets/book-glyph-closed.svg';
-import glyphOpen from '../assets/book-glyph-open.svg';
 import bookHover from '../assets/book-hover.svg';
 import bookOpen from '../assets/book-open.svg';
 import { GENERATIONS } from '../monarch/generations';
@@ -22,13 +20,14 @@ const item: Variants = {
   open: { opacity: 1, y: 0, transition: { duration: 0.25, ease: 'easeOut' } },
 };
 
-const FLOCK = 100;
-const BUTTON = 66;
+const FLOCK = 10;
+const BUTTON = 56;
 // The card hangs this far past the top right corner of the button.
 const CARD_OVERHANG = 15;
 const CARD_RADIUS = 52;
 
-const BALL = ballSpots({ x: BUTTON / 2, y: BUTTON / 2 }, 28, 125, 10);
+// Small enough that not even a wingtip shows past the button.
+const BALL = ballSpots({ x: BUTTON / 2, y: BUTTON / 2 }, 18, 14, 10);
 
 const nearby = (from: Point, rng: () => number) => ({ x: from.x + (rng() - 0.5) * 60, y: from.y + (rng() - 0.5) * 60 });
 
@@ -37,7 +36,6 @@ export function Legend() {
   const [open, setOpen] = useState(false);
   // Every open and close gets its own key, so the flock doesn't fly the same way each time.
   const [toggles, setToggles] = useState(0);
-  const [startled, setStartled] = useState(-Infinity);
   const [cardSize, setCardSize] = useState<{ width: number; height: number } | null>(null);
   const ref = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
@@ -56,7 +54,7 @@ export function Legend() {
     if (!open) return { key: `ball:${toggles}`, perches: BALL, free: apart(0), air: nearby };
     if (!cardSize) return null;
     const box = { left: BUTTON + CARD_OVERHANG - cardSize.width, top: -CARD_OVERHANG, ...cardSize };
-    return { key: `card:${toggles}`, perches: outlineSpots(box, CARD_RADIUS, 6), free: apart(11), air: nearby };
+    return { key: `card:${toggles}`, perches: outlineSpots(box, CARD_RADIUS, 6), free: apart(40), air: nearby };
   }, [open, cardSize, toggles]);
 
   useEffect(() => {
@@ -94,33 +92,22 @@ export function Legend() {
           </motion.div>
         )}
       </AnimatePresence>
-      {/* Between the card and the button: they stand on the card's outline and huddle under the book. */}
+      {/* Between the card and the button: they stand on the card's outline and hide behind the button. */}
       {!reduced && (
-        <FlockCanvas origin={ref} startled={startled}>
+        <FlockCanvas origin={ref}>
           <Flock roost={roost} size={FLOCK} sizes={[7, 11]} stagger={0.05} departure={0.5} body={CanvasButterfly} />
         </FlockCanvas>
       )}
       <button
-        className={`legend-button${reduced ? '' : ' bare'}${open ? ' open' : ''}`}
+        className={`legend-button${open ? ' open' : ''}`}
         aria-label={open ? 'Hide the generations' : 'Show the generations'}
         aria-expanded={open}
         aria-controls="legend-card"
         onClick={() => toggle(!open)}
-        onPointerEnter={() => setStartled(performance.now())}
       >
-        {reduced ? (
-          <>
-            <img className="rest" src={bookClosed} alt="" />
-            <img className="hover" src={bookHover} alt="" />
-            <img className="active" src={bookOpen} alt="" />
-          </>
-        ) : (
-          // No disc: the book stands dark on the huddled butterflies, and cream on the open card.
-          <>
-            <img className="rest" src={glyphClosed} alt="" />
-            <img className="active" src={glyphOpen} alt="" />
-          </>
-        )}
+        <img className="rest" src={bookClosed} alt="" />
+        <img className="hover" src={bookHover} alt="" />
+        <img className="active" src={bookOpen} alt="" />
       </button>
     </div>
   );
