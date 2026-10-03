@@ -10,8 +10,6 @@ const FLOCK = 8;
 const FIRST_MOVE_MS = 6500;
 const MOVE_EVERY_MS = 6000;
 const MOVE_JITTER_MS = 2000;
-// Width of the title column; butterflies with nowhere to land flutter above it.
-const FRAME_WIDTH = 560;
 
 interface Bird {
   id: number;
@@ -33,6 +31,8 @@ interface Bird {
 interface Perches {
   title: string;
   list: Perch[];
+  /** Width of the title column; butterflies with nowhere to land flutter above it. */
+  width: number;
 }
 
 const key = (b: Bird) => `${b.id}:${b.trip}`;
@@ -69,35 +69,35 @@ function wingStyle(rng: Rng) {
 }
 
 /** Somewhere in the air near `from`, at about the same height, never far from the title. */
-function hoverPoint(from: Point, perches: Perch[], rng: Rng): Point {
+function hoverPoint(from: Point, perches: Perch[], width: number, rng: Rng): Point {
   const top = Math.min(...perches.map((p) => p.y));
-  return { x: clamp(from.x + (rng() - 0.5) * 110, -20, FRAME_WIDTH + 20), y: clamp(from.y - 10 - (rng() - 0.5) * 50, top - 110, top + 50) };
+  return { x: clamp(from.x + (rng() - 0.5) * 110, -20, width + 20), y: clamp(from.y - 10 - (rng() - 0.5) * 50, top - 110, top + 50) };
 }
 
 /** Sends `b` off on its next trip: onto a free letter if there is one, otherwise into the air. */
-function nextTrip(b: Bird, perches: Perch[], taken: Perch[], rng: Rng, delay: number, pace = 1): Bird {
+function nextTrip(b: Bird, perches: Perch[], width: number, taken: Perch[], rng: Rng, delay: number, pace = 1): Bird {
   const free = freePerches(perches, taken);
-  if (!free.length) return { ...b, perch: null, to: hoverPoint(b.to, perches, rng), trip: b.trip + 1, delay, pace };
+  if (!free.length) return { ...b, perch: null, to: hoverPoint(b.to, perches, width, rng), trip: b.trip + 1, delay, pace };
   const perch = pick(rng, free);
   return { ...b, perch, to: perches[perch], trip: b.trip + 1, delay, pace };
 }
 
 /** Sends the whole flock to letters on a newly measured title, bringing in newcomers until there are FLOCK. */
-function settle(birds: Bird[], { title, list: perches }: Perches, rng: Rng, landed: Set<string>): Bird[] {
+function settle(birds: Bird[], { title, list: perches, width }: Perches, rng: Rng, landed: Set<string>): Bird[] {
   const next: Bird[] = [];
   for (const b of birds) {
     // Each leaves at its own moment, before the old title is quite gone, and some take the
     // long way round, so they come down one by one. One caught mid-air just turns.
     const delay = landed.has(key(b)) ? rng() * 0.3 : 0;
-    next.push({ ...nextTrip(b, perches, takenBy(next, perches), rng, delay, 1 + rng() ** 1.5 * 1.6), on: title });
+    next.push({ ...nextTrip(b, perches, width, takenBy(next, perches), rng, delay, 1 + rng() ** 1.5 * 1.6), on: title });
   }
   for (let id = next.length; id < FLOCK; id++) {
-    const anchor = perches.length ? pick(rng, perches) : { x: rng() * FRAME_WIDTH, y: 0 };
+    const anchor = perches.length ? pick(rng, perches) : { x: rng() * width, y: 0 };
     const side = rng() < 0.5 ? 1 : -1;
     // Appears close by, a little above and to one side of a letter.
     const spawn = { x: anchor.x + side * (36 + rng() * 30), y: anchor.y - (26 + rng() * 26) };
     const bird: Bird = { id, seed: hash(`${id}`), trip: -1, perch: null, on: title, to: spawn, spawn, delay: 0, pace: 1, size: 8 + rng() * 4, wings: wingStyle(rng) };
-    next.push(nextTrip(bird, perches, takenBy(next, perches), rng, (id - birds.length) * 0.35 + rng() * 0.25));
+    next.push(nextTrip(bird, perches, width, takenBy(next, perches), rng, (id - birds.length) * 0.35 + rng() * 0.25));
   }
   return next;
 }
@@ -110,7 +110,7 @@ function settle(birds: Bird[], { title, list: perches }: Perches, rng: Rng, land
  */
 export function ChapterButterflies({ title, body, anchorRef }: { title: string; body: string; anchorRef: RefObject<HTMLElement | null> }) {
   const reduced = useReducedMotion();
-  const [perches, setPerches] = useState<Perches>({ title: '', list: [] });
+  const [perches, setPerches] = useState<Perches>({ title: '', list: [], width: 0 });
   const [birds, setBirds] = useState<Bird[]>([]);
   const birdsRef = useRef(birds);
   const landed = useRef(new Set<string>());
@@ -120,6 +120,12 @@ export function ChapterButterflies({ title, body, anchorRef }: { title: string; 
   const list = ready ? perches.list : [];
   const listRef = useRef(list);
   listRef.current = list;
+  const widthRef = useRef(perches.width);
+  widthRef.current = perches.width;
+  // The title grows and shrinks with the window. While it keeps its line breaks the perches
+  // just move and the butterflies on them follow, but once it wraps differently the same
+  // perch can sit on another letter, so the flock settles again.
+  const lines = list.map((p) => p.line).join();
   const titleRef = useRef(title);
   titleRef.current = title;
   birdsRef.current = birds;
@@ -129,7 +135,8 @@ export function ChapterButterflies({ title, body, anchorRef }: { title: string; 
     if (reduced) return;
     let alive = true;
     const measure = () => {
-      if (alive && anchorRef.current) setPerches({ title, list: measureTitle(title, body, anchorRef.current) });
+      const anchor = anchorRef.current;
+      if (alive && anchor) setPerches({ title, list: measureTitle(title, body, anchor), width: anchor.offsetWidth });
     };
     document.fonts.ready.then(measure);
     window.addEventListener('resize', measure);
@@ -143,8 +150,8 @@ export function ChapterButterflies({ title, body, anchorRef }: { title: string; 
     if (!ready) return;
     const rng = mulberry32(hash(title));
     rngRef.current = rng;
-    setBirds((current) => settle(current, { title, list: listRef.current }, rng, landed.current));
-  }, [ready, title]);
+    setBirds((current) => settle(current, { title, list: listRef.current, width: widthRef.current }, rng, landed.current));
+  }, [ready, title, lines]);
 
   useEffect(() => {
     const rng = rngRef.current;
@@ -157,7 +164,7 @@ export function ChapterButterflies({ title, body, anchorRef }: { title: string; 
       if (resting.length) {
         const bird = pick(rng, resting);
         // Counting its own letter as taken keeps it from hopping on the spot.
-        const next = { ...nextTrip(bird, all, [...takenBy(current, all, bird), all[bird.perch!]], rng, 0), on: titleRef.current };
+        const next = { ...nextTrip(bird, all, widthRef.current, [...takenBy(current, all, bird), all[bird.perch!]], rng, 0), on: titleRef.current };
         if (next.perch !== null) setBirds(current.map((b) => (b === bird ? next : b)));
       }
       timer = setTimeout(move, MOVE_EVERY_MS + rng() * MOVE_JITTER_MS);
@@ -175,7 +182,7 @@ export function ChapterButterflies({ title, body, anchorRef }: { title: string; 
         return current;
       }
       const all = listRef.current;
-      const next = { ...nextTrip(b, all, takenBy(current, all, b), mulberry32(b.seed + trip), 0), on: titleRef.current };
+      const next = { ...nextTrip(b, all, widthRef.current, takenBy(current, all, b), mulberry32(b.seed + trip), 0), on: titleRef.current };
       return current.map((c) => (c === b ? next : c));
     });
   };
