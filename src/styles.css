@@ -96,6 +96,34 @@ p {
   pointer-events: none;
 }
 
+/* Loader */
+
+.loader {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  background: var(--bg);
+}
+
+.loader-track {
+  width: 160px;
+  height: 1px;
+  background: var(--track);
+  overflow: hidden;
+}
+
+.loader-bar {
+  height: 100%;
+  background: var(--cream);
+  transform-origin: left;
+  transition: transform 0.2s linear;
+}
+
 /* Chapter, date and generation share one column, anchored above the timeline. */
 
 .story {
