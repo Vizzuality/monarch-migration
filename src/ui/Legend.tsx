@@ -2,6 +2,8 @@ import { AnimatePresence, motion, useReducedMotion, type Variants } from 'motion
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import bookClosed from '../assets/book-closed.svg';
+import glyphClosed from '../assets/book-glyph-closed.svg';
+import glyphOpen from '../assets/book-glyph-open.svg';
 import bookHover from '../assets/book-hover.svg';
 import bookOpen from '../assets/book-open.svg';
 import { GENERATIONS } from '../monarch/generations';
@@ -90,26 +92,33 @@ export function Legend() {
           </motion.div>
         )}
       </AnimatePresence>
-      <button
-        className={`legend-button${open ? ' open' : ''}`}
-        aria-label={open ? 'Hide the generations' : 'Show the generations'}
-        aria-expanded={open}
-        aria-controls="legend-card"
-        onClick={() => toggle(!open)}
-      >
-        {reduced && (
-          <>
-            <img className="rest" src={bookClosed} alt="" />
-            <img className="hover" src={bookHover} alt="" />
-            <img className="active" src={bookOpen} alt="" />
-          </>
-        )}
-      </button>
+      {/* Between the card and the button: they stand on the card's outline and huddle under the book. */}
       {!reduced && (
         <div className="legend-flock">
           <Flock roost={roost} size={FLOCK} sizes={[7, 11]} stagger={0.05} departure={0.5} />
         </div>
       )}
+      <button
+        className={`legend-button${reduced ? '' : ' bare'}${open ? ' open' : ''}`}
+        aria-label={open ? 'Hide the generations' : 'Show the generations'}
+        aria-expanded={open}
+        aria-controls="legend-card"
+        onClick={() => toggle(!open)}
+      >
+        {reduced ? (
+          <>
+            <img className="rest" src={bookClosed} alt="" />
+            <img className="hover" src={bookHover} alt="" />
+            <img className="active" src={bookOpen} alt="" />
+          </>
+        ) : (
+          // No disc: the book stands dark on the huddled butterflies, and cream on the open card.
+          <>
+            <img className="rest" src={glyphClosed} alt="" />
+            <img className="active" src={glyphOpen} alt="" />
+          </>
+        )}
+      </button>
     </div>
   );
 }

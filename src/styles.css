@@ -314,6 +314,10 @@ p {
   opacity: 1;
 }
 
+.legend-button.bare:not(.open):hover .rest {
+  opacity: 1;
+}
+
 .legend-button:focus-visible {
   outline: 2px solid var(--cream);
   outline-offset: 2px;
