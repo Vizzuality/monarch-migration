@@ -45,7 +45,7 @@ function Slot({ value, roll: r }: { value: string; roll: Roll }) {
   );
 }
 
-export function DayReadout({ day, dominant }: { day: number; dominant: Generation | null }) {
+export function DayReadout({ day, dominant }: { day: number; dominant: Generation }) {
   const today = Math.floor(day);
   const r = useRoll(today);
   const { date, month } = dateOf(today);
@@ -62,20 +62,17 @@ export function DayReadout({ day, dominant }: { day: number; dominant: Generatio
         </span>{' '}
         <Slot value={month} roll={r} />
       </p>
-      {/* The line keeps its height with no Dominant generation, so the date above never moves. */}
       <div className="readout-generation">
         <AnimatePresence mode="wait" initial={false}>
-          {dominant !== null && (
-            <motion.p
-              key={dominant}
-              style={{ color: `rgb(${GENERATIONS[dominant].color})` }}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0, transition: { duration: 0.18, ease: 'easeOut' } }}
-              exit={{ opacity: 0, y: -6, transition: { duration: 0.12, ease: 'easeIn' } }}
-            >
-              {GENERATIONS[dominant].name}
-            </motion.p>
-          )}
+          <motion.p
+            key={dominant}
+            style={{ color: `rgb(${GENERATIONS[dominant].color})` }}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0, transition: { duration: 0.18, ease: 'easeOut' } }}
+            exit={{ opacity: 0, y: -6, transition: { duration: 0.12, ease: 'easeIn' } }}
+          >
+            {GENERATIONS[dominant].name}
+          </motion.p>
         </AnimatePresence>
       </div>
     </div>

@@ -109,34 +109,22 @@ function stateAt(lineage: Lineage, t: number): State {
   return { kind: 'rest' };
 }
 
-// Below this share of its own peak a generation's stragglers don't count as
-// dominant, so the label doesn't name a handful of butterflies.
-const DOMINANT_MIN = 0.03;
+/** Counts everyone towards a Generation: fliers by their trip, eggs and caterpillars by their mother, colonies as the Super generation. */
+function generationOf(s: State): Generation {
+  if (s.kind === 'fly') return s.trip.group as Generation;
+  if (s.kind === 'egg') return s.prevGen;
+  return 0;
+}
 
 function computeActivity(lineages: Lineage[]): Activity {
-  const moving = GENERATIONS.map(() => new Float32Array(YEAR_DAYS));
+  const dominant: Generation[] = [];
   for (let d = 0; d < YEAR_DAYS; d++) {
     const t = d + 0.5;
-    for (const lineage of lineages) {
-      const s = stateAt(lineage, t);
-      if (s.kind === 'fly') moving[s.trip.group][d]++;
-    }
+    const counts = GENERATIONS.map(() => 0);
+    for (const lineage of lineages) counts[generationOf(stateAt(lineage, t))]++;
+    dominant.push(counts.indexOf(Math.max(...counts)) as Generation);
   }
-
-  const peaks = moving.map((series) => Math.max(...series));
-  const dominant = new Int8Array(YEAR_DAYS).fill(-1);
-  const strength = new Float32Array(YEAR_DAYS);
-  for (let d = 0; d < YEAR_DAYS; d++) {
-    let best = -1;
-    for (let g = 0; g < moving.length; g++) {
-      if (moving[g][d] < peaks[g] * DOMINANT_MIN) continue;
-      if (best === -1 || moving[g][d] > moving[best][d]) best = g;
-    }
-    dominant[d] = best;
-    // sqrt keeps the quiet edges of a band visible.
-    if (best !== -1) strength[d] = Math.sqrt(moving[best][d] / peaks[best]);
-  }
-  return { moving, dominant, strength };
+  return { dominant };
 }
 
 const RING_DAYS = 3;
