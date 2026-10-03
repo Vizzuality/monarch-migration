@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState, type RefObject } from 'react';
 
 import type { Rng } from '../data/random';
 import { Flock, type Roost } from './Flock';
-import { measureTitle, type Perch, type Point } from './perches';
+import { isFree, measureTitle, type Perch, type Point } from './perches';
 
 const FLOCK = 8;
 
@@ -46,11 +46,19 @@ export function ChapterButterflies({ title, body, anchorRef }: { title: string; 
     };
   }, [reduced, title, body, anchorRef]);
 
-  // Perches measured on the outgoing title must not be used for the incoming one.
-  const roost = useMemo<Roost | null>(
+  // Perches measured on the outgoing title must not be used for the incoming one. While the
+  // title keeps its line breaks the perches just move with it, but once it wraps differently
+  // the same perch can sit on another letter.
+  const roost = useMemo<Roost<Perch> | null>(
     () =>
       perches.title === title
-        ? { key: title, perches: perches.list, air: (from, rng) => hoverPoint(from, perches.list, perches.width, rng) }
+        ? {
+            key: title,
+            shape: perches.list.map((p) => p.line).join(),
+            perches: perches.list,
+            free: isFree,
+            air: (from, rng) => hoverPoint(from, perches.list, perches.width, rng),
+          }
         : null,
     [perches, title],
   );

@@ -3,7 +3,12 @@ export interface Point {
   y: number;
 }
 
-export interface Perch extends Point {
+/** Somewhere a butterfly can stand, tilted `angle` degrees clockwise from upright. */
+export interface Spot extends Point {
+  angle?: number;
+}
+
+export interface Perch extends Spot {
   line: number;
 }
 

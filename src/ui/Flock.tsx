@@ -4,17 +4,25 @@ import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { mulberry32, type Rng } from '../data/random';
 import { ASPECT, Butterfly, FEET_X, type Pose } from './Butterfly';
 import { flightPath } from './flight';
-import { isFree, type Perch, type Point } from './perches';
+import type { Point, Spot } from './perches';
 
 const FIRST_MOVE_MS = 6500;
 const MOVE_EVERY_MS = 6000;
 const MOVE_JITTER_MS = 2000;
 
 /** Somewhere a flock can settle: the spots to land on and the air around them. */
-export interface Roost {
+export interface Roost<P extends Spot = Spot> {
   /** Names the place. A new key sends the whole flock over to it. */
   key: string;
-  perches: Perch[];
+  /**
+   * A roost can move its perches about under the same key, and the butterflies on them
+   * follow. When it changes shape enough that the same perch sits somewhere else entirely,
+   * a new `shape` makes the flock settle again.
+   */
+  shape?: string;
+  perches: P[];
+  /** Whether `p` leaves room for butterflies already standing on `taken`. */
+  free: (p: P, taken: P[]) => boolean;
   /** Somewhere in the air near `from`, for a butterfly with nowhere to land. */
   air: (from: Point, rng: Rng) => Point;
 }
@@ -26,7 +34,7 @@ interface Bird {
   /** Index into the perches of roost `on`, or null while it flutters above. */
   perch: number | null;
   on: string;
-  to: Point;
+  to: Spot;
   /** Where it first fades in. Later trips start wherever it happens to be. */
   spawn: Point;
   delay: number;
@@ -46,11 +54,11 @@ function hash(text: string) {
 
 const pick = <T,>(rng: Rng, items: T[]) => items[Math.floor(rng() * items.length)];
 
-function freePerches(perches: Perch[], taken: Perch[], except?: number) {
-  return perches.map((_, i) => i).filter((i) => i !== except && isFree(perches[i], taken));
+function freePerches<P extends Spot>({ perches, free }: Roost<P>, taken: P[]) {
+  return perches.map((_, i) => i).filter((i) => free(perches[i], taken));
 }
 
-function takenBy(birds: Bird[], perches: Perch[], except?: Bird) {
+function takenBy<P extends Spot>(birds: Bird[], perches: P[], except?: Bird) {
   return birds.filter((b) => b !== except && b.perch !== null).map((b) => perches[b.perch!]);
 }
 
@@ -69,30 +77,43 @@ function wingStyle(rng: Rng) {
 }
 
 /** Sends `b` off on its next trip: onto a free perch if there is one, otherwise into the air. */
-function nextTrip(b: Bird, roost: Roost, taken: Perch[], rng: Rng, delay: number, pace = 1): Bird {
-  const free = freePerches(roost.perches, taken);
+function nextTrip<P extends Spot>(b: Bird, roost: Roost<P>, taken: P[], rng: Rng, delay: number, pace = 1): Bird {
+  const free = freePerches(roost, taken);
   if (!free.length) return { ...b, perch: null, on: roost.key, to: roost.air(b.to, rng), trip: b.trip + 1, delay, pace };
   const perch = pick(rng, free);
   return { ...b, perch, on: roost.key, to: roost.perches[perch], trip: b.trip + 1, delay, pace };
 }
 
+interface Options {
+  size: number;
+  /** Smallest and largest butterfly, in pixels across. */
+  sizes: [number, number];
+  /** Seconds between one newcomer and the next. */
+  stagger: number;
+  /** Seconds over which a settled flock leaves for a new roost. */
+  departure: number;
+}
+
 /** Sends the whole flock to perches on a new roost, bringing in newcomers until there are `size`. */
-function settle(birds: Bird[], roost: Roost, size: number, rng: Rng, landed: Set<string>): Bird[] {
+function settle<P extends Spot>(birds: Bird[], roost: Roost<P>, { size, sizes, stagger, departure }: Options, rng: Rng, landed: Set<string>): Bird[] {
   const { perches } = roost;
   const next: Bird[] = [];
   for (const b of birds) {
     // Each leaves at its own moment and some take the long way round, so they come down one
     // by one. One caught mid-air just turns.
-    const delay = landed.has(key(b)) ? rng() * 0.3 : 0;
+    const delay = landed.has(key(b)) ? rng() * departure : 0;
     next.push(nextTrip(b, roost, takenBy(next, perches), rng, delay, 1 + rng() ** 1.5 * 1.6));
   }
   for (let id = next.length; id < size; id++) {
     const anchor = pick(rng, perches);
     const side = rng() < 0.5 ? 1 : -1;
-    // Appears close by, a little above and to one side of a perch.
-    const spawn = { x: anchor.x + side * (36 + rng() * 30), y: anchor.y - (26 + rng() * 26) };
-    const bird: Bird = { id, seed: hash(`${id}`), trip: -1, perch: null, on: roost.key, to: spawn, spawn, delay: 0, pace: 1, size: 8 + rng() * 4, wings: wingStyle(rng) };
-    next.push(nextTrip(bird, roost, takenBy(next, perches), rng, (id - birds.length) * 0.35 + rng() * 0.25));
+    // Appears close by, a little off a perch on the side it faces and to one side of it.
+    const along = side * (36 + rng() * 30);
+    const off = 26 + rng() * 26;
+    const tilt = ((anchor.angle ?? 0) * Math.PI) / 180;
+    const spawn = { x: anchor.x + along * Math.cos(tilt) + off * Math.sin(tilt), y: anchor.y + along * Math.sin(tilt) - off * Math.cos(tilt) };
+    const bird: Bird = { id, seed: hash(`${id}`), trip: -1, perch: null, on: roost.key, to: spawn, spawn, delay: 0, pace: 1, size: sizes[0] + rng() * (sizes[1] - sizes[0]), wings: wingStyle(rng) };
+    next.push(nextTrip(bird, roost, takenBy(next, perches), rng, (id - birds.length) * stagger + rng() * 0.25));
   }
   return next;
 }
@@ -103,7 +124,7 @@ function settle(birds: Bird[], roost: Roost, size: number, rng: Rng, landed: Set
  * straight from its perch to one on the new roost. Any that find no free perch flutter
  * about until one frees up. While `roost` is null they finish their trips and wait.
  */
-export function Flock({ roost, size }: { roost: Roost | null; size: number }) {
+export function Flock<P extends Spot>({ roost, size, sizes = [8, 12], stagger = 0.35, departure = 0.3 }: { roost: Roost<P> | null } & Partial<Options> & Pick<Options, 'size'>) {
   const [birds, setBirds] = useState<Bird[]>([]);
   const birdsRef = useRef(birds);
   birdsRef.current = birds;
@@ -112,10 +133,6 @@ export function Flock({ roost, size }: { roost: Roost | null; size: number }) {
   const roostRef = useRef(roost);
   if (roost) roostRef.current = roost;
   const list = roost?.perches ?? [];
-  // A roost that keeps its key can still move its perches about, and the butterflies on them
-  // follow. Once the perches fall on other lines the same perch can sit somewhere else
-  // entirely, so the flock settles again.
-  const lines = list.map((p) => p.line).join();
   const ready = roost !== null && list.length > 0;
 
   useEffect(() => {
@@ -123,8 +140,8 @@ export function Flock({ roost, size }: { roost: Roost | null; size: number }) {
     if (!ready || !current) return;
     const rng = mulberry32(hash(current.key));
     rngRef.current = rng;
-    setBirds((birds) => settle(birds, current, size, rng, landed.current));
-  }, [ready, roost?.key, lines, size]);
+    setBirds((birds) => settle(birds, current, { size, sizes, stagger, departure }, rng, landed.current));
+  }, [ready, roost?.key, roost?.shape, size]);
 
   useEffect(() => {
     const rng = rngRef.current;
@@ -169,7 +186,7 @@ export function Flock({ roost, size }: { roost: Roost | null; size: number }) {
   );
 }
 
-function FlyingButterfly({ bird, to, onArrive }: { bird: Bird; to: Point; onArrive: () => void }) {
+function FlyingButterfly({ bird, to, onArrive }: { bird: Bird; to: Spot; onArrive: () => void }) {
   const x = useMotionValue(bird.spawn.x);
   const y = useMotionValue(bird.spawn.y);
   const rotate = useMotionValue(0);
@@ -189,7 +206,7 @@ function FlyingButterfly({ bird, to, onArrive }: { bird: Bird; to: Point; onArri
     const from = { x: x.get(), y: y.get() };
     const target = toRef.current;
     setFace(target.x >= from.x ? 1 : -1);
-    const f = flightPath(from, target, mulberry32(bird.seed + bird.trip), { startRotate: rotate.get(), fromRest: landedTrip === bird.trip - 1, pace: bird.pace });
+    const f = flightPath(from, target, mulberry32(bird.seed + bird.trip), { startRotate: rotate.get(), endRotate: target.angle ?? 0, fromRest: landedTrip === bird.trip - 1, pace: bird.pace });
     const options = { duration: f.duration, delay: bird.delay, ease: 'linear' as const, times: f.times };
     const fade = bird.trip === 0 ? animate(opacity, [0, 1, 1], { ...options, times: [0, 0.15, 1] }) : animate(opacity, 1, { duration: 0.3 });
     const flight = [animate(x, f.x, options), animate(y, f.y, options), animate(rotate, f.rotate, options)];
@@ -211,7 +228,8 @@ function FlyingButterfly({ bird, to, onArrive }: { bird: Bird; to: Point; onArri
     if (pose !== 'perched') return;
     x.set(to.x);
     y.set(to.y);
-  }, [pose, to.x, to.y]);
+    rotate.set(to.angle ?? 0);
+  }, [pose, to.x, to.y, to.angle]);
 
   return (
     <motion.div className="butterfly-flight" style={{ x, y, rotate, opacity }}>
