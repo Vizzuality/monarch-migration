@@ -8,12 +8,12 @@ import { ChapterButterflies } from './ChapterButterflies';
 const EASE_OUT = [0.2, 0.8, 0.2, 1] as const;
 
 const block: Variants = {
-  leave: { opacity: 0, y: -8, transition: { duration: 0.25, ease: 'easeIn' } },
+  leave: { opacity: 0, y: -4, transition: { duration: 0.4, ease: 'easeIn' } },
 };
 
 const line: Variants = {
-  enter: { opacity: 0, y: 12 },
-  show: (delay: number) => ({ opacity: 1, y: 0, transition: { duration: 0.5, ease: EASE_OUT, delay } }),
+  enter: { opacity: 0, y: 6 },
+  show: (delay: number) => ({ opacity: 1, y: 0, transition: { duration: 0.8, ease: EASE_OUT, delay } }),
 };
 
 export function ChapterText({ day }: { day: number }) {
@@ -42,7 +42,7 @@ function Chapter({ title, body }: { title: string; body: string }) {
       <motion.h1 variants={line} custom={0}>
         {title}
       </motion.h1>
-      <motion.p variants={line} custom={0.08}>
+      <motion.p variants={line} custom={0.15}>
         {body}
       </motion.p>
     </motion.div>
