@@ -3,8 +3,8 @@ import type { Map as MaplibreMap } from 'maplibre-gl';
 import { useControl } from 'react-map-gl/maplibre';
 
 // MapLibre 6 moved `map.transform` onto an internal camera, but deck.gl 9.4
-// still reads it for the near/far planes and crashes without it. Leaving those
-// undefined makes deck fall back to its own; `elevation` covers terrain.
+// still reads `map.transform.elevation` to lift its camera when terrain is on,
+// and crashes without it. Only that field is read in overlaid mode.
 function shimTransform(map: MaplibreMap) {
   if ('transform' in map) return;
   Object.defineProperty(map, 'transform', {
