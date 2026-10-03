@@ -73,3 +73,19 @@ export function cameraPath(keyframes: Keyframe[]) {
     return out;
   };
 }
+
+// The viewport the keyframes were framed on.
+const FRAMED_ON = { width: 1440, height: 900 };
+// The closest shot is at zoom 6, so one level up still draws the z7 imagery at full detail.
+const MAX_ZOOM_BOOST = 1;
+
+/**
+ * How far to zoom in so a bigger viewport shows about the same patch of the
+ * map as the one the keyframes were framed on, instead of more of it and
+ * many more tiles. Measured on the area clear of `padding`; never zooms out.
+ */
+export function framingBoost(width: number, height: number, padding: { top: number; bottom: number; left: number; right: number }) {
+  const across = (width - padding.left - padding.right) / (FRAMED_ON.width - padding.left - padding.right);
+  const down = (height - padding.top - padding.bottom) / (FRAMED_ON.height - padding.top - padding.bottom);
+  return Math.min(MAX_ZOOM_BOOST, Math.max(0, Math.log2(Math.min(across, down))));
+}
