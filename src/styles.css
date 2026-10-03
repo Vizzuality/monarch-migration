@@ -100,19 +100,23 @@ p {
 
 .story {
   position: absolute;
-  left: 63px;
-  bottom: calc(var(--timeline-height) + 53px);
+  left: clamp(16px, 3.28vw, 63px);
+  bottom: calc(var(--timeline-height) + clamp(24px, 2.76vw, 53px));
   display: flex;
   flex-direction: column;
-  gap: 48px;
+  gap: clamp(24px, 2.5vw, 48px);
   pointer-events: none;
 }
 
 /* Chapter */
 
+/* The title follows the narrower of the viewport's width and height, reaching its full
+   size at 1920x1080, so it is already smaller on a laptop. The column and body text keep
+   their proportions to it. */
 .chapter {
+  --title-size: clamp(52px, min(6.28vw, 11.17vh), 120.552px);
   position: relative;
-  width: 560px;
+  width: min(calc(var(--title-size) * 4.645), 100vw - 32px);
 }
 
 .chapter-anchor {
@@ -125,17 +129,17 @@ p {
 .chapter h1 {
   font-family: var(--display);
   font-weight: 700;
-  font-size: 120.552px;
+  font-size: var(--title-size);
   line-height: 0.82;
   font-feature-settings: 'dlig' 1;
 }
 
 .chapter p {
-  margin-top: 31px;
-  width: 463px;
+  margin-top: calc(var(--title-size) * 0.257);
+  max-width: calc(var(--title-size) * 3.84);
   font-family: var(--serif);
   font-weight: 300;
-  font-size: 30px;
+  font-size: max(18px, var(--title-size) * 0.249);
   line-height: 1.17;
   letter-spacing: 1.2px;
 }
