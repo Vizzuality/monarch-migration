@@ -5,7 +5,7 @@ import { ScatterplotLayer, TextLayer } from '@deck.gl/layers';
 import { tint } from '../data/color';
 import type { Trip } from '../data/trips';
 import { GENERATIONS } from '../monarch/generations';
-import { COLONIES, PLACE_LABELS } from '../monarch/geo';
+import { PLACE_LABELS } from '../monarch/geo';
 import { CLOSE_UP } from '../monarch/scene';
 import type { Frame, Ring, Simulation } from '../monarch/types';
 
@@ -117,24 +117,6 @@ export function buildLayers({ sim, frame, day, zoom }: LayerInput): Layer[] {
       radiusUnits: 'pixels',
       opacity: 1,
       parameters: BLEND,
-    }),
-
-    new TextLayer({
-      id: 'colony-labels',
-      data: COLONIES,
-      getPosition: (d) => d.position,
-      getText: (d) => d.name.toUpperCase(),
-      getSize: 11,
-      getColor: [255, 236, 214, Math.round(200 * closeUp)],
-      getTextAnchor: (d) => d.anchor,
-      getPixelOffset: (d) => d.offset,
-      fontFamily: 'Inter, system-ui, sans-serif',
-      fontWeight: 600,
-      characterSet: 'auto',
-      outlineWidth: 3,
-      outlineColor: [10, 8, 12, Math.round(200 * closeUp)],
-      fontSettings: { sdf: true },
-      updateTriggers: { getColor: closeUp },
     }),
   ];
 }

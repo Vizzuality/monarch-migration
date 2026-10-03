@@ -1,12 +1,12 @@
 import type { LngLat, Zone } from '../data/random';
 
 /** Overwintering colonies inside the Monarch Butterfly Biosphere Reserve (Michoacán / Edomex). */
-export const COLONIES: { name: string; position: LngLat; weight: number; anchor: 'start' | 'end'; offset: [number, number] }[] = [
-  { name: 'El Rosario', position: [-100.268, 19.595], weight: 0.34, anchor: 'start', offset: [22, 6] },
-  { name: 'Sierra Chincua', position: [-100.29, 19.675], weight: 0.24, anchor: 'end', offset: [-22, -6] },
-  { name: 'Cerro Pelón', position: [-100.255, 19.385], weight: 0.18, anchor: 'end', offset: [-22, 0] },
-  { name: 'Piedra Herrada', position: [-99.975, 19.28], weight: 0.12, anchor: 'start', offset: [22, 0] },
-  { name: 'Cerro Altamirano', position: [-100.12, 19.97], weight: 0.12, anchor: 'start', offset: [22, 0] },
+export const COLONIES: { name: string; position: LngLat; weight: number }[] = [
+  { name: 'El Rosario', position: [-100.268, 19.595], weight: 0.34 },
+  { name: 'Sierra Chincua', position: [-100.29, 19.675], weight: 0.24 },
+  { name: 'Cerro Pelón', position: [-100.255, 19.385], weight: 0.18 },
+  { name: 'Piedra Herrada', position: [-99.975, 19.28], weight: 0.12 },
+  { name: 'Cerro Altamirano', position: [-100.12, 19.97], weight: 0.12 },
 ];
 
 export const ZONES: Record<'south' | 'central' | 'north', Zone> = {

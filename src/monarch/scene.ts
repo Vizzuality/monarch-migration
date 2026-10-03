@@ -22,7 +22,7 @@ export const KEYFRAMES: Keyframe[] = [
   keyframe(YEAR_DAYS, -100.16, 19.62, 6.0, 50, -28),
 ];
 
-/** Wide-shot labels fade out and colony labels fade in across this zoom range. */
+/** Place labels fade out across this zoom range as the camera closes on the colonies. */
 export const CLOSE_UP: [number, number] = [4.8, 5.8];
 
 // A soft milkweed-green haze over wherever eggs and caterpillars are.
