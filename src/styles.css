@@ -314,6 +314,33 @@ p {
   opacity: 1;
 }
 
+.legend-button:focus-visible {
+  outline: 2px solid var(--cream);
+  outline-offset: 2px;
+  border-radius: 50%;
+}
+
+.legend-flock {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* Hovering the button startles the flock: every perched butterfly opens and shuts its wings. */
+.legend:has(.legend-button:hover) .butterfly[data-pose='perched'] .butterfly-wings-near {
+  animation: wing-flick 0.45s ease-in-out;
+}
+
+@keyframes wing-flick {
+  0%,
+  100% {
+    transform: scaleY(1);
+  }
+  45% {
+    transform: scaleY(0.1);
+  }
+}
+
 .legend-card {
   position: absolute;
   top: -15px;
