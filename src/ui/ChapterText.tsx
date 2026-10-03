@@ -18,16 +18,20 @@ const line: Variants = {
 
 export function ChapterText({ day }: { day: number }) {
   const chapter = chapterAt(CHAPTERS, day);
-  const frame = useRef<HTMLDivElement>(null);
+  const anchor = useRef<HTMLDivElement>(null);
   return (
     // The butterflies sit outside the chapter so they stay on screen while it changes.
-    <div ref={frame} className="chapter">
+    <div className="chapter">
       {/* "wait" lets the old chapter finish leaving, then shows only the latest one,
           however many were crossed while scrubbing. */}
       <AnimatePresence mode="wait">
         <Chapter key={chapter.title} title={chapter.title} body={chapter.body} />
       </AnimatePresence>
-      <ChapterButterflies title={chapter.title} frameRef={frame} />
+      {/* The chapter grows upwards from its bottom edge, so that is the only place to hang
+          the butterflies from that stays put while the chapter changes. */}
+      <div ref={anchor} className="chapter-anchor">
+        <ChapterButterflies title={chapter.title} body={chapter.body} anchorRef={anchor} />
+      </div>
     </div>
   );
 }

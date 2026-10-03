@@ -96,14 +96,30 @@ p {
   pointer-events: none;
 }
 
+/* Chapter, date and generation share one column, anchored above the timeline. */
+
+.story {
+  position: absolute;
+  left: 63px;
+  bottom: calc(var(--timeline-height) + 53px);
+  display: flex;
+  flex-direction: column;
+  gap: 48px;
+  pointer-events: none;
+}
+
 /* Chapter */
 
 .chapter {
-  position: absolute;
-  top: 30%;
-  left: 63px;
+  position: relative;
   width: 560px;
-  pointer-events: none;
+}
+
+.chapter-anchor {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
 }
 
 .chapter h1 {
@@ -217,13 +233,9 @@ p {
 /* Date and generation */
 
 .readout {
-  position: absolute;
-  left: 63px;
-  bottom: calc(var(--timeline-height) + 53px);
   display: flex;
   flex-direction: column;
   gap: 9px;
-  pointer-events: none;
 }
 
 .readout-date {

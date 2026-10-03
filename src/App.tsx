@@ -93,8 +93,10 @@ export default function App() {
       </Map>
       <div className="vignette" />
       <img className="logo" src={logo} width="107.484" height="24.0381" alt="Vizzuality" />
-      <ChapterText day={day} />
-      <DayReadout day={day} dominant={dominant} />
+      <div className="story">
+        <ChapterText day={day} />
+        <DayReadout day={day} dominant={dominant} />
+      </div>
       <Legend />
       <Timeline
         activity={sim.activity}
