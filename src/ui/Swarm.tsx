@@ -5,7 +5,7 @@ import { YEAR_DAYS } from '../data/calendar';
 import { mulberry32 } from '../data/random';
 import type { SwarmMember } from '../monarch/types';
 
-// The trail runs this far behind the playhead, as tall as the space under the bar.
+// The trail runs this far ahead of the playhead, as tall as the space under the bar.
 const LENGTH = 160;
 // Seconds a dot takes to fly the length of the trail, give or take.
 const FLIGHT = 3.2;
@@ -57,8 +57,8 @@ interface Props {
 }
 
 /**
- * The population trailing behind the playhead: one dot per sampled Lineage takes off from
- * the playhead in its color for the day and flies back along the trail, fading as it goes.
+ * The population streaming ahead of the playhead: one dot per sampled Lineage takes off from
+ * the playhead in its color for the day and flies forward along the trail, fading as it goes.
  * Butterflies in flight cover the whole trail; the rest only hop, so the trail stretches
  * with the migration. Eggs and caterpillars are specks; butterflies vary in size.
  * It keeps flying while paused.
@@ -99,7 +99,7 @@ export function Swarm({ day, census }: Props) {
         } else {
           const progress = clock * dot.pace + dot.offset;
           const flight = Math.floor(progress);
-          // A dot keeps the day it took off on, so the trail shows the days just gone.
+          // A dot keeps the day it took off on, so a new color streams out from the playhead.
           if (flight !== dot.flight) {
             dot.flight = flight;
             dot.member = members[i];
@@ -109,7 +109,7 @@ export function Swarm({ day, census }: Props) {
         }
         const { color } = member;
         // Lingers by the playhead before speeding off, so the trail is densest there.
-        const x = LENGTH * (1 - reachOf(member) * age ** 1.6);
+        const x = LENGTH * reachOf(member) * age ** 1.6;
         const y = dot.y * height + (reduced ? 0 : WEAVE * Math.sin(age * 9 + dot.phase[0]) * Math.sin(age * 4 + dot.phase[1]));
         const alpha = 1 - age;
 
@@ -124,7 +124,7 @@ export function Swarm({ day, census }: Props) {
 
   return (
     <div className="swarm" aria-hidden="true">
-      <canvas ref={canvasRef} style={{ left: `${(day / YEAR_DAYS) * 100}%`, width: LENGTH, marginLeft: -LENGTH }} />
+      <canvas ref={canvasRef} style={{ left: `${(day / YEAR_DAYS) * 100}%`, width: LENGTH }} />
     </div>
   );
 }

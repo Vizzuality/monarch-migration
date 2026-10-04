@@ -25,5 +25,5 @@ One chain of mothers and daughters followed across a whole migration year, from 
 _Avoid_: Individual, track
 
 **Swarm**:
-The population trailing behind the playhead as a cloud of flying dots, one dot per Lineage in a fixed sample. Each dot takes off from the playhead in its Lineage's Generation color for that day, with eggs and caterpillars already shifting towards the Generation they become, and flies back along the trail as it fades, so the trail shows the days just gone. Dots of butterflies in flight cover the whole trail and the rest only hop, so the trail stretches with the migration. Not to be confused with the Flock, the drawn butterflies that perch around the chapter text and the legend.
+The population streaming ahead of the playhead as a cloud of flying dots, one dot per Lineage in a fixed sample. Each dot takes off from the playhead in its Lineage's Generation color for that day, with eggs and caterpillars already shifting towards the Generation they become, and flies forward along the trail as it fades. Dots of butterflies in flight cover the whole trail and the rest only hop, so the trail stretches with the migration. Eggs and caterpillars are specks; butterflies vary in size. Not to be confused with the Flock, the drawn butterflies that perch around the chapter text and the legend.
 _Avoid_: Particles, census, population sample
