@@ -24,6 +24,14 @@ export interface Activity {
   dominant: Generation[];
 }
 
+export type SwarmState = 'flying' | 'resting' | 'developing';
+
+/** One Lineage of the Swarm on a given day. */
+export interface SwarmMember {
+  color: RGB;
+  state: SwarmState;
+}
+
 export interface Simulation {
   buckets: TripBucket[];
   activity: Activity;
@@ -31,4 +39,6 @@ export interface Simulation {
   frame: (t: number, clock: number) => Frame;
   /** Points for the heatmap on day `t`: where the eggs and caterpillars are. */
   hotspots: (t: number) => GeoJSON.FeatureCollection<GeoJSON.Point>;
+  /** The Swarm on day `t`: the same sample of Lineages every day, in the same order. */
+  swarm: (t: number) => SwarmMember[];
 }

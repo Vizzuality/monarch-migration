@@ -176,6 +176,7 @@ export default function App() {
       <Legend />
       <Timeline
         activity={sim.activity}
+        census={sim.swarm}
         day={day}
         dominant={dominant}
         playing={playing}

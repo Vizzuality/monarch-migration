@@ -19,3 +19,11 @@ _Avoid_: First generation, Methuselah generation
 **Dominant generation**:
 The Generation most of the population belongs to on a given day. Eggs and caterpillars count towards their mother's Generation until they hatch, and butterflies resting in the colonies belong to the Super generation, so there is a Dominant generation every day of the year.
 _Avoid_: Current generation, active generation
+
+**Lineage**:
+One chain of mothers and daughters followed across a whole migration year, from a colony in spring back to the same colony in autumn. Exactly one member of a Lineage is alive (as a butterfly, egg or caterpillar) on any given day.
+_Avoid_: Individual, track
+
+**Swarm**:
+The population streaming ahead of the playhead as a cloud of flying dots, one dot per Lineage in a fixed sample. Each dot takes off from the playhead in its Lineage's Generation color for that day, with eggs and caterpillars already shifting towards the Generation they become, and flies forward along the trail as it fades. Dots of butterflies in flight cover the whole trail and the rest only hop, so the trail stretches with the migration. Eggs and caterpillars are specks; butterflies vary in size. Not to be confused with the Flock, the drawn butterflies that perch around the chapter text and the legend.
+_Avoid_: Particles, census, population sample

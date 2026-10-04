@@ -408,29 +408,32 @@ p {
   background: var(--timeline);
 }
 
-/* The dot sits 9.5px above the bar, as in the design. */
-.playhead {
+/* Under the bar, clipped to the track so it cuts off at the ends of the year. */
+.swarm {
   position: absolute;
-  top: -68px;
+  top: var(--bar-height);
+  left: 0;
+  right: 0;
   bottom: 0;
-  width: 0;
+  overflow: hidden;
   pointer-events: none;
 }
 
-.dot {
+.swarm canvas {
   position: absolute;
-  top: 52px;
-  left: -6.5px;
+  top: 0;
+  height: 100%;
 }
 
-.playhead::after {
-  content: '';
+/* Only spans the dark strip under the bar, leaving the Dominant generation colors untouched. */
+.playhead {
   position: absolute;
-  top: 58.5px;
+  top: var(--bar-height);
   bottom: 0;
-  left: -1px;
+  margin-left: -1px;
   width: 2px;
   background: currentColor;
+  pointer-events: none;
 }
 
 .maplibregl-ctrl-attrib {
