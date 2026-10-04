@@ -349,6 +349,8 @@ p {
   height: var(--timeline-height);
   display: flex;
   background: var(--timeline);
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .play {
