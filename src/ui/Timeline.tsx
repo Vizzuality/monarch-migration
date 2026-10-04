@@ -35,14 +35,6 @@ function barGradient({ dominant }: Activity) {
   return `linear-gradient(to right, ${stops.join(', ')})`;
 }
 
-function PlayheadDot() {
-  return (
-    <svg className="dot" width="13" height="13" viewBox="0 0 13 13" aria-hidden="true">
-      <circle cx="6.5" cy="6.5" r="4.5" fill="currentColor" stroke="white" strokeWidth="2" />
-    </svg>
-  );
-}
-
 function PauseIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">
@@ -119,9 +111,7 @@ export function Timeline({ activity, census, day, dominant, playing, onTogglePla
           initial={false}
           animate={{ color }}
           transition={{ duration: 0.4 }}
-        >
-          <PlayheadDot />
-        </motion.div>
+        />
       </div>
     </div>
   );

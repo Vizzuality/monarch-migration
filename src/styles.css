@@ -425,29 +425,15 @@ p {
   height: 100%;
 }
 
-/* The dot sits 9.5px above the bar, as in the design. */
+/* A plain line from the top of the bar down, so nothing sticks out above the timeline. */
 .playhead {
   position: absolute;
-  top: -68px;
+  top: 0;
   bottom: 0;
-  width: 0;
-  pointer-events: none;
-}
-
-.dot {
-  position: absolute;
-  top: 52px;
-  left: -6.5px;
-}
-
-.playhead::after {
-  content: '';
-  position: absolute;
-  top: 58.5px;
-  bottom: 0;
-  left: -1px;
+  margin-left: -1px;
   width: 2px;
   background: currentColor;
+  pointer-events: none;
 }
 
 .maplibregl-ctrl-attrib {
