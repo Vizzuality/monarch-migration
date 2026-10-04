@@ -384,6 +384,12 @@ p {
   background-color: var(--track);
 }
 
+/* Shrinks towards the middle of the bar, leaving the track behind it, while a Generation fades out. */
+.bar-fill {
+  position: absolute;
+  inset: 0;
+}
+
 .months {
   position: absolute;
   inset: 0;
