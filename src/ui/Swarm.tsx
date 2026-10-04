@@ -14,8 +14,8 @@ const WEAVE = 4;
 // Share of the trail a dot covers when its butterfly isn't flying: a short, slow hop.
 const HOP = 0.25;
 // Dot radius in px: butterflies come in all sizes, eggs and caterpillars are specks.
-const BUTTERFLY = { min: 0.5, max: 1.4 };
-const LARVA = { min: 0.25, max: 0.45 };
+const BUTTERFLY = { min: 0.85, max: 1.7 };
+const LARVA = { min: 0.6, max: 0.8 };
 
 interface Dot {
   /** 0 at the top of the trail, 1 at the bottom. */
