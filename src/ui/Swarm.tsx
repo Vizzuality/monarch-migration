@@ -65,6 +65,7 @@ interface Props {
  */
 export function Swarm({ day, census }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const wrapRef = useRef<HTMLCanvasElement>(null);
   const dayRef = useRef(day);
   dayRef.current = day;
   const reduced = useReducedMotion();
@@ -72,7 +73,9 @@ export function Swarm({ day, census }: Props) {
   useEffect(() => {
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext('2d');
-    if (!canvas || !ctx) return;
+    const wrap = wrapRef.current;
+    const wrapCtx = wrap?.getContext('2d');
+    if (!canvas || !ctx || !wrap || !wrapCtx) return;
     const dots = scatter(census(dayRef.current));
 
     let frame = requestAnimationFrame(function paint(now) {
@@ -118,6 +121,13 @@ export function Swarm({ day, census }: Props) {
         ctx.arc(x, y, radiusOf(member, dot.build), 0, Math.PI * 2);
         ctx.fill();
       });
+
+      if (wrap.width !== w || wrap.height !== h) {
+        wrap.width = w;
+        wrap.height = h;
+      }
+      wrapCtx.clearRect(0, 0, w, h);
+      wrapCtx.drawImage(canvas, 0, 0);
     });
     return () => cancelAnimationFrame(frame);
   }, [census, reduced]);
@@ -125,6 +135,8 @@ export function Swarm({ day, census }: Props) {
   return (
     <div className="swarm" aria-hidden="true">
       <canvas ref={canvasRef} style={{ left: `${(day / YEAR_DAYS) * 100}%`, width: LENGTH }} />
+      {/* The same trail a whole year back, so what runs past December carries on into January. */}
+      <canvas ref={wrapRef} style={{ left: `${(day / YEAR_DAYS - 1) * 100}%`, width: LENGTH }} />
     </div>
   );
 }
