@@ -425,10 +425,10 @@ p {
   height: 100%;
 }
 
-/* A plain line from the top of the bar down, so nothing sticks out above the timeline. */
+/* Only spans the dark strip under the bar, leaving the Dominant generation colors untouched. */
 .playhead {
   position: absolute;
-  top: 0;
+  top: var(--bar-height);
   bottom: 0;
   margin-left: -1px;
   width: 2px;
