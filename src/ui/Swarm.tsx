@@ -2,7 +2,6 @@ import { useReducedMotion } from 'motion/react';
 import { useEffect, useRef } from 'react';
 
 import { YEAR_DAYS } from '../data/calendar';
-import type { RGB } from '../data/color';
 import { mulberry32 } from '../data/random';
 import type { SwarmMember } from '../monarch/types';
 
@@ -14,34 +13,41 @@ const FLIGHT = 3.2;
 const WEAVE = 4;
 // Share of the trail a dot covers when its butterfly isn't flying: a short, slow hop.
 const HOP = 0.25;
+// Dot radius in px: butterflies come in all sizes, eggs and caterpillars are specks.
+const BUTTERFLY = { min: 0.5, max: 1.4 };
+const LARVA = { min: 0.25, max: 0.45 };
 
 interface Dot {
   /** 0 at the top of the trail, 1 at the bottom. */
   y: number;
-  radius: number;
+  /** Where its size falls in its stage's range, so it keeps its build from one flight to the next. */
+  build: number;
   /** Flights per second. Each flies at its own pace, so they never leave in step. */
   pace: number;
   offset: number;
   phase: [number, number];
-  /** Which flight it is on, and the color and share of the trail it took off with. */
+  /** Which flight it is on, and what it took off as. */
   flight: number;
-  color: RGB;
-  reach: number;
+  member: SwarmMember;
 }
 
-const reachOf = (m: SwarmMember) => (m.flying ? 1 : HOP);
+const reachOf = (m: SwarmMember) => (m.state === 'flying' ? 1 : HOP);
+
+function radiusOf(m: SwarmMember, build: number) {
+  const { min, max } = m.state === 'developing' ? LARVA : BUTTERFLY;
+  return min + (max - min) * build;
+}
 
 function scatter(members: SwarmMember[]): Dot[] {
   const rng = mulberry32(2203);
   return members.map((m) => ({
     y: rng(),
-    radius: 0.35 + rng() * 0.6,
+    build: rng() ** 1.5,
     pace: 1 / (FLIGHT * (0.7 + rng() * 0.6)),
     offset: rng(),
     phase: [rng() * Math.PI * 2, rng() * Math.PI * 2],
     flight: -1,
-    color: m.color,
-    reach: reachOf(m),
+    member: m,
   }));
 }
 
@@ -54,7 +60,8 @@ interface Props {
  * The population trailing behind the playhead: one dot per sampled Lineage takes off from
  * the playhead in its color for the day and flies back along the trail, fading as it goes.
  * Butterflies in flight cover the whole trail; the rest only hop, so the trail stretches
- * with the migration. It keeps flying while paused.
+ * with the migration. Eggs and caterpillars are specks; butterflies vary in size.
+ * It keeps flying while paused.
  */
 export function Swarm({ day, census }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -85,33 +92,30 @@ export function Swarm({ day, census }: Props) {
 
       dots.forEach((dot, i) => {
         let age: number;
-        let color: RGB;
-        let reach: number;
+        let member: SwarmMember;
         if (reduced) {
           age = dot.offset;
-          color = members[i].color;
-          reach = reachOf(members[i]);
+          member = members[i];
         } else {
           const progress = clock * dot.pace + dot.offset;
           const flight = Math.floor(progress);
           // A dot keeps the day it took off on, so the trail shows the days just gone.
           if (flight !== dot.flight) {
             dot.flight = flight;
-            dot.color = members[i].color;
-            dot.reach = reachOf(members[i]);
+            dot.member = members[i];
           }
           age = progress - flight;
-          color = dot.color;
-          reach = dot.reach;
+          member = dot.member;
         }
+        const { color } = member;
         // Lingers by the playhead before speeding off, so the trail is densest there.
-        const x = LENGTH * (1 - reach * age ** 1.6);
+        const x = LENGTH * (1 - reachOf(member) * age ** 1.6);
         const y = dot.y * height + (reduced ? 0 : WEAVE * Math.sin(age * 9 + dot.phase[0]) * Math.sin(age * 4 + dot.phase[1]));
         const alpha = 1 - age;
 
         ctx.fillStyle = `rgba(${color[0]}, ${color[1]}, ${color[2]}, ${alpha})`;
         ctx.beginPath();
-        ctx.arc(x, y, dot.radius, 0, Math.PI * 2);
+        ctx.arc(x, y, radiusOf(member, dot.build), 0, Math.PI * 2);
         ctx.fill();
       });
     });

@@ -24,10 +24,12 @@ export interface Activity {
   dominant: Generation[];
 }
 
+export type SwarmState = 'flying' | 'resting' | 'developing';
+
 /** One Lineage of the Swarm on a given day. */
 export interface SwarmMember {
   color: RGB;
-  flying: boolean;
+  state: SwarmState;
 }
 
 export interface Simulation {

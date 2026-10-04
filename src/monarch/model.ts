@@ -233,11 +233,11 @@ const SWARM_EVERY = 2;
 function census(sample: { lineage: Lineage; i: number }[], t: number): SwarmMember[] {
   return sample.map(({ lineage, i }) => {
     const s = stateAt(lineage, t);
-    if (s.kind === 'fly') return { color: tint(GENERATIONS[s.trip.group].color, i), flying: true };
+    if (s.kind === 'fly') return { color: tint(GENERATIONS[s.trip.group].color, i), state: 'flying' };
     if (s.kind === 'egg') {
-      return { color: metamorphosisColor((t - s.since) / (s.until - s.since), tint(GENERATIONS[s.nextGen].color, i)), flying: false };
+      return { color: metamorphosisColor((t - s.since) / (s.until - s.since), tint(GENERATIONS[s.nextGen].color, i)), state: 'developing' };
     }
-    return { color: tint(GENERATIONS[0].color, i), flying: false };
+    return { color: tint(GENERATIONS[0].color, i), state: 'resting' };
   });
 }
 
