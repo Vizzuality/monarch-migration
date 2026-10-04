@@ -22,6 +22,8 @@ export interface Frame {
 export interface Activity {
   /** The Dominant generation of each day. */
   dominant: Generation[];
+  /** The share of each day's population that is a butterfly of each Generation; the rest are eggs and caterpillars. */
+  butterflies: number[][];
 }
 
 export type SwarmState = 'flying' | 'resting' | 'developing';

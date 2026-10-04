@@ -349,6 +349,8 @@ p {
   height: var(--timeline-height);
   display: flex;
   background: var(--timeline);
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .play {
@@ -380,6 +382,12 @@ p {
   right: 0;
   height: var(--bar-height);
   background-color: var(--track);
+}
+
+/* Shrinks towards the middle of the bar, leaving the track behind it, while a Generation fades out. */
+.bar-fill {
+  position: absolute;
+  inset: 0;
 }
 
 .months {

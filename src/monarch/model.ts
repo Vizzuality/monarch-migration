@@ -109,7 +109,7 @@ function stateAt(lineage: Lineage, t: number): State {
   return { kind: 'rest' };
 }
 
-/** Counts everyone towards a Generation: fliers by their trip, eggs and caterpillars by their mother, colonies as the Super generation. */
+/** Fliers belong to their trip's Generation, eggs and caterpillars to their mother's, colonies to the Super generation. */
 function generationOf(s: State): Generation {
   if (s.kind === 'fly') return s.trip.group as Generation;
   if (s.kind === 'egg') return s.prevGen;
@@ -118,13 +118,18 @@ function generationOf(s: State): Generation {
 
 function computeActivity(lineages: Lineage[]): Activity {
   const dominant: Generation[] = [];
+  const butterflies: number[][] = [];
   for (let d = 0; d < YEAR_DAYS; d++) {
     const t = d + 0.5;
-    const counts = GENERATIONS.map(() => 0);
-    for (const lineage of lineages) counts[generationOf(stateAt(lineage, t))]++;
-    dominant.push(counts.indexOf(Math.max(...counts)) as Generation);
+    const adults = GENERATIONS.map(() => 0);
+    for (const lineage of lineages) {
+      const state = stateAt(lineage, t);
+      if (state.kind !== 'egg') adults[generationOf(state)]++;
+    }
+    dominant.push(adults.indexOf(Math.max(...adults)) as Generation);
+    butterflies.push(adults.map((c) => c / lineages.length));
   }
-  return { dominant };
+  return { dominant, butterflies };
 }
 
 const RING_DAYS = 3;
