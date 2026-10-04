@@ -4,13 +4,15 @@ import { useMemo, useRef } from 'react';
 import playIcon from '../assets/play.svg';
 import { dateOf, MONTH_LENGTHS, MONTHS, YEAR_DAYS } from '../data/calendar';
 import { GENERATIONS, type Generation } from '../monarch/generations';
-import type { Activity } from '../monarch/types';
+import type { Activity, SwarmMember } from '../monarch/types';
+import { Swarm } from './Swarm';
 
 // Days a change of Dominant generation takes to blend on the bar, centred on the change.
 const FADE_DAYS = 14;
 
 interface Props {
   activity: Activity;
+  census: (day: number) => SwarmMember[];
   day: number;
   dominant: Generation;
   playing: boolean;
@@ -50,7 +52,7 @@ function PauseIcon() {
   );
 }
 
-export function Timeline({ activity, day, dominant, playing, onTogglePlay, onScrub, onScrubStart, onScrubEnd }: Props) {
+export function Timeline({ activity, census, day, dominant, playing, onTogglePlay, onScrub, onScrubStart, onScrubEnd }: Props) {
   const bar = useMemo(() => barGradient(activity), [activity]);
   const trackRef = useRef<HTMLDivElement>(null);
 
@@ -110,6 +112,7 @@ export function Timeline({ activity, day, dominant, playing, onTogglePlay, onScr
             </span>
           ))}
         </div>
+        <Swarm day={day} census={census} />
         <motion.div
           className="playhead"
           style={{ left: `${(day / YEAR_DAYS) * 100}%` }}

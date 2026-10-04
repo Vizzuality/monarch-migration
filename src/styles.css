@@ -408,6 +408,23 @@ p {
   background: var(--timeline);
 }
 
+/* Under the bar, clipped to the track so it cuts off at the ends of the year. */
+.swarm {
+  position: absolute;
+  top: var(--bar-height);
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.swarm canvas {
+  position: absolute;
+  top: 0;
+  height: 100%;
+}
+
 /* The dot sits 9.5px above the bar, as in the design. */
 .playhead {
   position: absolute;

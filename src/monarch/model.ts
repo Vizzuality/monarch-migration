@@ -4,7 +4,7 @@ import { around, gauss, inZone, mulberry32, unit, type LngLat, type Rng } from '
 import { bucketTrips, flight, positionOnTrip, type Trip } from '../data/trips';
 import { GENERATIONS, metamorphosisColor, type Generation } from './generations';
 import { COLONIES, FLYWAY, ZONES } from './geo';
-import type { Activity, Frame, Ring, Simulation } from './types';
+import type { Activity, Frame, Ring, Simulation, SwarmMember } from './types';
 
 /**
  * Synthetic migration model.
@@ -226,12 +226,29 @@ function breedingGrounds(lineages: Lineage[], t: number) {
   return { type: 'FeatureCollection' as const, features };
 }
 
+// One Lineage in this many joins the Swarm.
+const SWARM_EVERY = 2;
+
+/** The sampled Lineages on day `t`, colored as the map draws them. Index `i` is the Lineage's id, which seeds its tint. */
+function census(sample: { lineage: Lineage; i: number }[], t: number): SwarmMember[] {
+  return sample.map(({ lineage, i }) => {
+    const s = stateAt(lineage, t);
+    if (s.kind === 'fly') return { color: tint(GENERATIONS[s.trip.group].color, i), flying: true };
+    if (s.kind === 'egg') {
+      return { color: metamorphosisColor((t - s.since) / (s.until - s.since), tint(GENERATIONS[s.nextGen].color, i)), flying: false };
+    }
+    return { color: tint(GENERATIONS[0].color, i), flying: false };
+  });
+}
+
 export function buildModel(count = 800, seed = 1102): Simulation {
   const { lineages, trips } = buildLineages(count, seed);
+  const sample = lineages.map((lineage, i) => ({ lineage, i })).filter(({ i }) => i % SWARM_EVERY === 0);
   return {
     buckets: bucketTrips(trips),
     activity: computeActivity(lineages),
     frame: (t, clock) => computeFrame(lineages, t, clock),
     hotspots: (t) => breedingGrounds(lineages, t),
+    swarm: (t) => census(sample, t),
   };
 }
