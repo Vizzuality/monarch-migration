@@ -22,12 +22,17 @@ import { DayReadout } from './ui/DayReadout';
 import { Legend } from './ui/Legend';
 import { Lightbox } from './ui/Lightbox';
 import { Loader } from './ui/Loader';
+import { isNarrow, useNarrow } from './ui/narrow';
 import { Timeline } from './ui/Timeline';
 
 // A full year plays in ~2 minutes.
 const DAYS_PER_SECOND = 3;
-// Keeps the action clear of the chapter text and the timeline.
+// Keeps the action clear of the chapter text and the timeline. The keyframes were framed with it.
 const PADDING = { top: 20, bottom: 150, left: 380, right: 320 };
+// On a phone the chapter text fills the bottom of the screen, so the action goes above it, under the logo.
+const narrowPadding = (height: number) => ({ top: 70, bottom: Math.round(height * 0.4), left: 16, right: 16 });
+// How many zoom levels a phone may pull back to show about as much of the migration as a laptop.
+const NARROW_ZOOM_OUT = 1.5;
 // A tile that fails gets skipped rather than hold the story back.
 const SAMPLE_TIMEOUT_MS = 5000;
 // MapLibre sizes each source's tile cache as one screenful per zoom level kept.
@@ -63,7 +68,13 @@ interface Viewing {
 
 const sim = buildModel();
 const cameraAt = cameraPath(KEYFRAMES);
-const viewportBoost = () => framingBoost(window.innerWidth, window.innerHeight, PADDING);
+
+function framing() {
+  const { innerWidth: width, innerHeight: height } = window;
+  const narrow = isNarrow();
+  const padding = narrow ? narrowPadding(height) : PADDING;
+  return { padding, zoomBoost: framingBoost(width, height, padding, PADDING, narrow ? -NARROW_ZOOM_OUT : 0) };
+}
 
 export default function App() {
   const [day, setDay] = useState(START_DAY);
@@ -73,7 +84,8 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [progress, setProgress] = useState(0);
   const [previewDay, setPreviewDay] = useState(START_DAY);
-  const [zoomBoost, setZoomBoost] = useState(viewportBoost);
+  const [{ padding, zoomBoost }, setFraming] = useState(framing);
+  const narrow = useNarrow();
   const [viewing, setViewing] = useState<Viewing | null>(null);
   // Where the photo shrinks back to as the Lightbox closes, and whose card stays empty until it lands.
   const [returnTo, setReturnTo] = useState<CardOnScreen | null>(null);
@@ -82,12 +94,12 @@ export default function App() {
   const playingRef = useRef(playing);
   const scrubbingRef = useRef(false);
   const loadingRef = useRef(loading);
-  const zoomBoostRef = useRef(zoomBoost);
+  const framingRef = useRef({ padding, zoomBoost });
   const viewingRef = useRef(viewing);
   playingRef.current = playing;
   loadingRef.current = loading;
   viewingRef.current = viewing;
-  zoomBoostRef.current = zoomBoost;
+  framingRef.current = { padding, zoomBoost };
   const mapRef = useRef<MapRef>(null);
   const preloadRun = useRef(0);
 
@@ -109,7 +121,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    const onResize = () => setZoomBoost(viewportBoost());
+    const onResize = () => setFraming(framing());
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
   }, []);
@@ -138,12 +150,12 @@ export default function App() {
     const stale = () => run !== preloadRun.current;
 
     pinTileZoom(map);
-    const boost = zoomBoostRef.current;
+    const { padding, zoomBoost } = framingRef.current;
     const framedAt = (d: number) => {
       const cam = cameraAt(d);
-      return { ...cam, zoom: cam.zoom + boost };
+      return { ...cam, zoom: cam.zoom + zoomBoost };
     };
-    const { samples, urls } = pathTiles(map, framedAt, PADDING, START_DAY);
+    const { samples, urls } = pathTiles(map, framedAt, padding, START_DAY);
     let tiles = 0;
     let photos = 0;
     const downloaded = () => setProgress((DOWNLOAD_SHARE * (tiles + photos)) / (urls.length + PHOTOS.length));
@@ -222,7 +234,7 @@ export default function App() {
       <Map
         ref={mapRef}
         {...camera}
-        padding={PADDING}
+        padding={padding}
         interactive={false}
         mapStyle={MAP_STYLE}
         maxPitch={70}
@@ -242,8 +254,9 @@ export default function App() {
         <ChapterText day={day} />
         <DayReadout day={day} dominant={dominant} />
       </div>
-      <Legend />
-      <Albums chapters={CHAPTERS} active={chapterAt(CHAPTERS, day)} away={away} onOpen={openAlbum} />
+      {/* A phone has no room for them yet. */}
+      {!narrow && <Legend />}
+      {!narrow && <Albums chapters={CHAPTERS} active={chapterAt(CHAPTERS, day)} away={away} onOpen={openAlbum} />}
       <Timeline
         activity={sim.activity}
         census={sim.swarm}
