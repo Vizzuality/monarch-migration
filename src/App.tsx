@@ -228,7 +228,7 @@ export default function App() {
         maxPitch={70}
         maxTileCacheZoomLevels={TILE_CACHE_SCREENS}
         onLoad={preload}
-        attributionControl={{ compact: true }}
+        attributionControl={false}
         style={{ position: 'absolute', inset: 0 }}
       >
         <Source id="hotspots" type="geojson" data={hotspots}>
