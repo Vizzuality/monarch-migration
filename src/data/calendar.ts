@@ -16,14 +16,33 @@ export function dateOf(day: number): { date: number; month: string } {
   return { date: d - MONTH_STARTS[m] + 1, month: MONTH_NAMES[m] };
 }
 
+export interface Photo {
+  /** Also seeds where the photo lands in its Album's stack. */
+  id: string;
+  src: string;
+  thumb: string;
+  title: string;
+  description: string;
+  /** What's in the picture, for screen readers. */
+  alt: string;
+  credit: string;
+}
+
 export interface Chapter {
   from: number;
   title: string;
   body: string;
+  album?: Photo[];
 }
 
 export function chapterAt(chapters: Chapter[], day: number): Chapter {
   let current = chapters[0];
   for (const c of chapters) if (day >= c.from) current = c;
   return current;
+}
+
+/** The day halfway through the chapter at `index`, where its Album sits. */
+export function chapterMiddle(chapters: Chapter[], index: number): number {
+  const to = chapters[index + 1]?.from ?? YEAR_DAYS;
+  return (chapters[index].from + to) / 2;
 }

@@ -1,3 +1,4 @@
+import { AnimatePresence } from 'motion/react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { getMaxParallelImageRequests, setMaxParallelImageRequests } from 'maplibre-gl';
 import Map, { Layer, Source, type MapRef } from 'react-map-gl/maplibre';
@@ -5,7 +6,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import './map/maplibre-worker';
 
 import logo from './assets/vizzuality.svg';
-import { YEAR_DAYS } from './data/calendar';
+import { chapterAt, YEAR_DAYS, type Chapter } from './data/calendar';
 import { MAP_STYLE } from './map/basemaps';
 import { cameraPath, framingBoost } from './map/camera';
 import { DeckOverlay } from './map/DeckOverlay';
@@ -14,9 +15,12 @@ import { pathTiles, pinTileZoom, tilesSettled } from './map/preload';
 import { stashTiles } from './map/tile-stash';
 import { buildModel } from './monarch/model';
 import { HOTSPOT_PAINT, KEYFRAMES, START_DAY } from './monarch/scene';
+import { CHAPTERS } from './monarch/story';
+import { Albums, cardOnScreen, type CardOnScreen } from './ui/Albums';
 import { ChapterText } from './ui/ChapterText';
 import { DayReadout } from './ui/DayReadout';
 import { Legend } from './ui/Legend';
+import { Lightbox } from './ui/Lightbox';
 import { Loader } from './ui/Loader';
 import { Timeline } from './ui/Timeline';
 
@@ -33,6 +37,30 @@ const TILE_CACHE_SCREENS = 64;
 const DOWNLOAD_SHARE = 0.85;
 const PRELOAD_PARALLEL_IMAGES = 256;
 
+const PHOTOS = CHAPTERS.flatMap((c) => c.album ?? []).flatMap((p) => [p.thumb, p.src]);
+// Holding on to them keeps them decoded, so a card never grows into the Lightbox half drawn.
+const decoded: HTMLImageElement[] = [];
+
+async function loadPhotos(onProgress: (done: number) => void) {
+  let done = 0;
+  await Promise.all(
+    PHOTOS.map(async (url) => {
+      const img = new Image();
+      img.src = url;
+      decoded.push(img);
+      // A photo that fails just shows up late, like a tile.
+      await img.decode().catch(() => {});
+      onProgress(++done);
+    }),
+  );
+}
+
+interface Viewing {
+  chapter: Chapter;
+  index: number;
+  from: CardOnScreen;
+}
+
 const sim = buildModel();
 const cameraAt = cameraPath(KEYFRAMES);
 const viewportBoost = () => framingBoost(window.innerWidth, window.innerHeight, PADDING);
@@ -46,13 +74,19 @@ export default function App() {
   const [progress, setProgress] = useState(0);
   const [previewDay, setPreviewDay] = useState(START_DAY);
   const [zoomBoost, setZoomBoost] = useState(viewportBoost);
+  const [viewing, setViewing] = useState<Viewing | null>(null);
+  // Where the photo shrinks back to as the Lightbox closes, and whose card stays empty until it lands.
+  const [returnTo, setReturnTo] = useState<CardOnScreen | null>(null);
+  const [away, setAway] = useState<string | null>(null);
 
   const playingRef = useRef(playing);
   const scrubbingRef = useRef(false);
   const loadingRef = useRef(loading);
   const zoomBoostRef = useRef(zoomBoost);
+  const viewingRef = useRef(viewing);
   playingRef.current = playing;
   loadingRef.current = loading;
+  viewingRef.current = viewing;
   zoomBoostRef.current = zoomBoost;
   const mapRef = useRef<MapRef>(null);
   const preloadRun = useRef(0);
@@ -63,7 +97,8 @@ export default function App() {
     const tick = (now: number) => {
       const dt = Math.min(0.1, (now - last) / 1000);
       last = now;
-      if (playingRef.current && !scrubbingRef.current && !loadingRef.current) {
+      // Pausing for the Lightbox leaves `playing` alone, so closing it picks up where the reader left off.
+      if (playingRef.current && !scrubbingRef.current && !loadingRef.current && !viewingRef.current) {
         setDay((d) => (d + dt * DAYS_PER_SECOND) % YEAR_DAYS);
       }
       setClock(now / 1000);
@@ -83,7 +118,7 @@ export default function App() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (loadingRef.current) return;
+      if (loadingRef.current || viewingRef.current) return;
       if (e.code === 'Space') {
         e.preventDefault();
         togglePlay();
@@ -109,8 +144,13 @@ export default function App() {
       return { ...cam, zoom: cam.zoom + boost };
     };
     const { samples, urls } = pathTiles(map, framedAt, PADDING, START_DAY);
+    let tiles = 0;
+    let photos = 0;
+    const downloaded = () => setProgress((DOWNLOAD_SHARE * (tiles + photos)) / (urls.length + PHOTOS.length));
+    const photosLoaded = loadPhotos((done) => ((photos = done), downloaded()));
     // Downloading first lets the walk below run at decode speed instead of network latency.
-    await stashTiles(urls, (done) => setProgress((DOWNLOAD_SHARE * done) / urls.length));
+    await stashTiles(urls, (done) => ((tiles = done), downloaded()));
+    await photosLoaded;
     if (stale()) return;
 
     // Showing each camera once is what puts its tiles in MapLibre's cache;
@@ -135,6 +175,35 @@ export default function App() {
     setProgress(1);
     setLoading(false);
   }, []);
+
+  const openAlbum = (chapter: Chapter) => {
+    const from = cardOnScreen(chapter.album![0], 0);
+    if (!from) return;
+    // The card grows straight from where it sank, while the story jumps behind the blur.
+    if (chapterAt(CHAPTERS, day) !== chapter) setDay(chapter.from);
+    setViewing({ chapter, index: 0, from });
+    setAway(chapter.album![0].id);
+  };
+
+  const showPhoto = (index: number) => {
+    if (!viewing) return;
+    setViewing({ ...viewing, index });
+    setAway(viewing.chapter.album![index].id);
+  };
+
+  const closeLightbox = () => {
+    if (!viewing) return;
+    setReturnTo(cardOnScreen(viewing.chapter.album![viewing.index], viewing.index));
+    setViewing(null);
+  };
+
+  const lightboxClosed = () => {
+    const photo = away;
+    setAway(null);
+    const chapter = CHAPTERS.find((c) => c.album?.some((p) => p.id === photo));
+    // The dialog is still in the DOM, keeping the page inert, until the frame after its exit.
+    if (chapter) requestAnimationFrame(() => document.querySelector<HTMLElement>(`[data-album="${chapter.title}"]`)?.focus());
+  };
 
   const shot = cameraAt(loading ? previewDay : day);
   const camera = { ...shot, zoom: shot.zoom + zoomBoost };
@@ -174,6 +243,7 @@ export default function App() {
         <DayReadout day={day} dominant={dominant} />
       </div>
       <Legend />
+      <Albums chapters={CHAPTERS} active={chapterAt(CHAPTERS, day)} away={away} onOpen={openAlbum} />
       <Timeline
         activity={sim.activity}
         census={sim.swarm}
@@ -185,6 +255,18 @@ export default function App() {
         onScrubStart={() => (scrubbingRef.current = true)}
         onScrubEnd={() => (scrubbingRef.current = false)}
       />
+      <AnimatePresence custom={returnTo} onExitComplete={lightboxClosed}>
+        {viewing && (
+          <Lightbox
+            key="lightbox"
+            chapter={viewing.chapter}
+            index={viewing.index}
+            from={viewing.from}
+            onIndex={showPhoto}
+            onClose={closeLightbox}
+          />
+        )}
+      </AnimatePresence>
       <Loader progress={progress} visible={loading} />
     </div>
   );
