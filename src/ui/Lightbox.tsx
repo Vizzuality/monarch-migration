@@ -15,6 +15,9 @@ const PHOTO_ASPECT = 3 / 4;
 // Between the photo and the text next to it.
 const CAPTION_GAP = 51;
 const CAPTION_WIDTH = 383;
+// The blur itself is animated rather than faded: some browsers drop a backdrop-filter while its element's opacity animates.
+const CLEAR = { backgroundColor: 'rgba(5, 5, 7, 0)', backdropFilter: 'blur(0px)', WebkitBackdropFilter: 'blur(0px)' };
+const DIMMED = { backgroundColor: 'rgba(5, 5, 7, 0.55)', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)' };
 // The close hint sits up and to the right of the pointer.
 const HINT_OFFSET = { x: 24, y: -43 };
 
@@ -96,9 +99,9 @@ export function Lightbox({ chapter, index, from, onIndex, onClose }: Props) {
       <motion.div
         className="lightbox-backdrop"
         onClick={onClose}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0, transition: { duration: 0.35, delay: 0.1 } }}
+        initial={CLEAR}
+        animate={DIMMED}
+        exit={{ ...CLEAR, transition: { duration: 0.35, delay: 0.1 } }}
         transition={{ duration: 0.4 }}
       />
 

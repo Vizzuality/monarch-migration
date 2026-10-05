@@ -409,7 +409,7 @@ p {
   overflow: hidden;
 }
 
-/* The blur is drawn by the backdrop div, so it can fade with the photo. */
+/* The blur is drawn by the backdrop div, so it can come in with the photo. */
 .lightbox::backdrop {
   background: none;
 }
@@ -417,9 +417,6 @@ p {
 .lightbox-backdrop {
   position: absolute;
   inset: 0;
-  background: rgba(5, 5, 7, 0.55);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
 }
 
 .lightbox-photo {
