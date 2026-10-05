@@ -5,6 +5,7 @@ import playIcon from '../assets/play.svg';
 import { dateOf, MONTH_LENGTHS, MONTHS, YEAR_DAYS } from '../data/calendar';
 import { GENERATIONS, type Generation } from '../monarch/generations';
 import type { Activity, SwarmMember } from '../monarch/types';
+import { useNarrow } from './narrow';
 import { Swarm } from './Swarm';
 
 // How far the leading Generation has to be ahead of the next one, as a share of the butterflies of both,
@@ -77,6 +78,8 @@ function PauseIcon() {
 
 export function Timeline({ activity, census, day, dominant, playing, onTogglePlay, onScrub, onScrubStart, onScrubEnd }: Props) {
   const bar = useMemo(() => barShape(activity), [activity]);
+  // A phone gets a bare bar: the same colors, without the thinning, the months or the Swarm.
+  const narrow = useNarrow();
   const trackRef = useRef<HTMLDivElement>(null);
 
   const scrubTo = (clientX: number) => {
@@ -128,16 +131,20 @@ export function Timeline({ activity, census, day, dominant, playing, onTogglePla
         }}
       >
         <div className="bar">
-          <div className="bar-fill" style={bar} />
+          <div className="bar-fill" style={narrow ? { backgroundImage: bar.backgroundImage } : bar} />
         </div>
-        <div className="months" style={{ gridTemplateColumns: MONTH_LENGTHS.map((l) => `${l}fr`).join(' ') }}>
-          {MONTHS.map((m) => (
-            <span key={m} className="month">
-              {m}
-            </span>
-          ))}
-        </div>
-        <Swarm day={day} census={census} />
+        {!narrow && (
+          <>
+            <div className="months" style={{ gridTemplateColumns: MONTH_LENGTHS.map((l) => `${l}fr`).join(' ') }}>
+              {MONTHS.map((m) => (
+                <span key={m} className="month">
+                  {m}
+                </span>
+              ))}
+            </div>
+            <Swarm day={day} census={census} />
+          </>
+        )}
         <motion.div
           className="playhead"
           style={{ left: `${(day / YEAR_DAYS) * 100}%` }}

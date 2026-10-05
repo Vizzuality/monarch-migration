@@ -79,13 +79,22 @@ const FRAMED_ON = { width: 1440, height: 900 };
 // The closest shot is at zoom 6, so one level up still draws the z7 imagery at full detail.
 const MAX_ZOOM_BOOST = 1;
 
+interface Padding {
+  top: number;
+  bottom: number;
+  left: number;
+  right: number;
+}
+
 /**
  * How far to zoom in so a bigger viewport shows about the same patch of the
  * map as the one the keyframes were framed on, instead of more of it and
- * many more tiles. Measured on the area clear of `padding`; never zooms out.
+ * many more tiles. Compares the area clear of `padding` with the one the
+ * keyframes had clear of `framedWith`. Zooms out by no more than `-min`.
  */
-export function framingBoost(width: number, height: number, padding: { top: number; bottom: number; left: number; right: number }) {
-  const across = (width - padding.left - padding.right) / (FRAMED_ON.width - padding.left - padding.right);
-  const down = (height - padding.top - padding.bottom) / (FRAMED_ON.height - padding.top - padding.bottom);
-  return Math.min(MAX_ZOOM_BOOST, Math.max(0, Math.log2(Math.min(across, down))));
+export function framingBoost(width: number, height: number, padding: Padding, framedWith: Padding, min = 0) {
+  const across = (width - padding.left - padding.right) / (FRAMED_ON.width - framedWith.left - framedWith.right);
+  const down = (height - padding.top - padding.bottom) / (FRAMED_ON.height - framedWith.top - framedWith.bottom);
+  // Clamp before the log: a viewport narrower than its padding gives a negative ratio, and log2 of that is NaN.
+  return Math.min(MAX_ZOOM_BOOST, Math.log2(Math.max(2 ** min, Math.min(across, down))));
 }

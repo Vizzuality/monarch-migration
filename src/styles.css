@@ -154,6 +154,8 @@ p {
   left: 0;
   right: 0;
   bottom: 0;
+  /* Lets the butterflies read the title size off it, as a length. */
+  font-size: var(--title-size);
 }
 
 .chapter h1 {
@@ -634,4 +636,35 @@ p {
   width: 2px;
   background: currentColor;
   pointer-events: none;
+}
+
+/* Phone held upright. Keep in step with NARROW in ui/narrow.ts. */
+
+@media (max-width: 768px) {
+  :root {
+    --timeline-height: 44px;
+    --bar-height: 6px;
+    /* There are no Albums to make room for. */
+    --album-height: 0px;
+  }
+
+  .play {
+    width: 44px;
+  }
+
+  /* The whole strip still takes a finger, around a bar drawn thin across its middle. */
+  .track {
+    margin: 0 16px;
+  }
+
+  .bar {
+    top: calc((var(--timeline-height) - var(--bar-height)) / 2);
+    border-radius: calc(var(--bar-height) / 2);
+    overflow: hidden;
+  }
+
+  .playhead {
+    top: 12px;
+    bottom: 12px;
+  }
 }
