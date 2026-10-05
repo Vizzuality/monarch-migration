@@ -379,7 +379,8 @@ p {
 }
 
 .album.active .card,
-.album:hover .card {
+.album:hover .card,
+.album:focus-visible .card {
   filter: none;
 }
 
