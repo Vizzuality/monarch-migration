@@ -87,5 +87,6 @@ const MAX_ZOOM_BOOST = 1;
 export function framingBoost(width: number, height: number, padding: { top: number; bottom: number; left: number; right: number }) {
   const across = (width - padding.left - padding.right) / (FRAMED_ON.width - padding.left - padding.right);
   const down = (height - padding.top - padding.bottom) / (FRAMED_ON.height - padding.top - padding.bottom);
-  return Math.min(MAX_ZOOM_BOOST, Math.max(0, Math.log2(Math.min(across, down))));
+  // Clamp before the log: a viewport narrower than its padding gives a negative ratio, and log2 of that is NaN.
+  return Math.min(MAX_ZOOM_BOOST, Math.log2(Math.max(1, Math.min(across, down))));
 }
