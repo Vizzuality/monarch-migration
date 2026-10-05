@@ -8,6 +8,10 @@ An animated map story of the yearly monarch butterfly migration between the Mexi
 A titled passage of the story that is active from its start day of the year until the next one begins.
 _Avoid_: Step, section, slide
 
+**Album**:
+The photos that belong to a Chapter, pinned to the timeline halfway through it. While its Chapter is active the Album rises above the timeline at full contrast, with several photos fanned out as a loose stack of cards. The rest of the year it sinks behind the timeline, dimmed, with only its first photo peeking out. A Chapter may have no Album. Clicking any Album opens it in the Lightbox, after first moving the playhead into its Chapter if that Chapter wasn't active.
+_Avoid_: Gallery, step images, cards
+
 **Generation**:
 One of the four successive butterfly cohorts that make up a migration year, numbered by birth order after the Super generation.
 _Avoid_: Brood, wave
@@ -19,6 +23,10 @@ _Avoid_: First generation, Methuselah generation
 **Dominant generation**:
 The Generation with the most butterflies on a given day. Eggs and caterpillars don't count towards any Generation until they hatch, and butterflies resting in the colonies belong to the Super generation, so there is a Dominant generation every day of the year. It takes over on the day its butterflies outnumber the previous Generation's, which is where the timeline's colors hand over.
 _Avoid_: Current generation, active generation
+
+**Lightbox**:
+The full-screen view of one Album, one photo at a time with its title and description, over the dimmed and blurred story. The story pauses while it is open.
+_Avoid_: Modal, gallery, viewer
 
 **Lineage**:
 One chain of mothers and daughters followed across a whole migration year, from a colony in spring back to the same colony in autumn. Exactly one member of a Lineage is alive (as a butterfly, egg or caterpillar) on any given day.

@@ -31,6 +31,8 @@
   --sans: Futura, 'Trebuchet MS', sans-serif;
   --timeline-height: 86px;
   --bar-height: 17px;
+  /* How far an open Album reaches above the timeline: a raised card plus the highest, most turned one fanned out. */
+  --album-height: 76px;
 }
 
 * {
@@ -129,7 +131,7 @@ p {
 .story {
   position: absolute;
   left: clamp(16px, 3.28vw, 63px);
-  bottom: calc(var(--timeline-height) + clamp(24px, 2.76vw, 53px));
+  bottom: calc(var(--timeline-height) + var(--album-height) + clamp(8px, 1.6vw, 31px));
   display: flex;
   flex-direction: column;
   gap: clamp(24px, 2.5vw, 48px);
@@ -337,6 +339,196 @@ p {
   font-size: 20px;
   line-height: 1.17;
   letter-spacing: 0.4px;
+}
+
+/* Albums: each stands on the timeline halfway through its Chapter, and sinks behind it the rest of the year. */
+
+.albums {
+  position: absolute;
+  left: 50px;
+  right: 0;
+  bottom: var(--timeline-height);
+}
+
+.album {
+  position: absolute;
+  bottom: 0;
+  width: 65px;
+  height: 65px;
+  margin-left: -32.5px;
+  padding: 0;
+  border: none;
+  background: none;
+}
+
+.album:focus-visible {
+  outline: 2px solid var(--cream);
+  outline-offset: 4px;
+  border-radius: 14px;
+}
+
+.card {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border: 1px solid #000;
+  border-radius: 14px;
+  box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.8);
+  filter: grayscale(1) brightness(0.55);
+  transition: filter 0.4s;
+}
+
+.album.active .card,
+.album:hover .card,
+.album:focus-visible .card {
+  filter: none;
+}
+
+/* Steps aside while a photo underneath is out in the Lightbox, and settles back on top once it has landed. */
+.album .card.covering {
+  filter: opacity(0);
+  transition-duration: 0.15s;
+}
+
+.card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Lightbox */
+
+.lightbox {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--cream);
+  outline: none;
+  overflow: hidden;
+}
+
+/* The blur is drawn by the backdrop div, so it can come in with the photo. */
+.lightbox::backdrop {
+  background: none;
+}
+
+.lightbox-backdrop {
+  position: absolute;
+  inset: 0;
+}
+
+.lightbox-stage {
+  position: absolute;
+  inset: 0 0 var(--timeline-height);
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.lightbox-photo {
+  pointer-events: auto;
+  position: absolute;
+  overflow: hidden;
+  border: 1px solid transparent;
+  border-radius: 14px;
+  cursor: pointer;
+}
+
+.lightbox-photo img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.lightbox-caption {
+  position: absolute;
+  width: 383px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 46px;
+}
+
+.lightbox-arrows {
+  display: flex;
+  gap: 8px;
+}
+
+.lightbox-arrows button {
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  /* The blur in the Figma export only works inline, not through an <img>. */
+  backdrop-filter: blur(12.65px);
+  -webkit-backdrop-filter: blur(12.65px);
+}
+
+.lightbox-arrows button:focus-visible {
+  outline: 2px solid var(--cream);
+  outline-offset: 2px;
+}
+
+.lightbox-arrows img {
+  display: block;
+}
+
+.lightbox-arrows .flip {
+  transform: rotate(180deg);
+}
+
+.lightbox-caption h2 {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: clamp(36px, 3.36vw, 58px);
+  line-height: 0.63;
+  font-feature-settings: 'dlig' 1;
+}
+
+.lightbox-caption p {
+  margin-top: 37px;
+  font-family: var(--serif);
+  font-weight: 300;
+  font-size: clamp(22px, 1.97vw, 34px);
+  line-height: 1.17;
+  letter-spacing: 0.02em;
+}
+
+.lightbox-caption small {
+  display: block;
+  margin-top: 24px;
+  font-size: 12px;
+  line-height: 1.28;
+  letter-spacing: 0.48px;
+  text-transform: uppercase;
+  color: rgba(228, 210, 186, 0.58);
+}
+
+.lightbox-hint {
+  position: fixed;
+  padding: 10px 14px;
+  border-radius: 53px;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(6.95px);
+  -webkit-backdrop-filter: blur(6.95px);
+  font-size: 14px;
+  line-height: 1.28;
+  letter-spacing: 0.56px;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: #fff;
+  pointer-events: none;
 }
 
 /* Timeline */
