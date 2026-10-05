@@ -177,7 +177,7 @@ export default function App() {
   }, []);
 
   const openAlbum = (chapter: Chapter) => {
-    const from = cardOnScreen(chapter.album![0], 0);
+    const from = cardOnScreen(chapter.album![0]);
     if (!from) return;
     // The card grows straight from where it sank, while the story jumps behind the blur.
     if (chapterAt(CHAPTERS, day) !== chapter) setDay(chapter.from);
@@ -193,7 +193,7 @@ export default function App() {
 
   const closeLightbox = () => {
     if (!viewing) return;
-    setReturnTo(cardOnScreen(viewing.chapter.album![viewing.index], viewing.index));
+    setReturnTo(cardOnScreen(viewing.chapter.album![viewing.index]));
     setViewing(null);
   };
 

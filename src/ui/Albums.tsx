@@ -11,23 +11,37 @@ const RISE: Transition = { type: 'spring', stiffness: 260, damping: 28 };
 const FAN_DELAY = 0.1;
 const FAN_STAGGER = 0.07;
 
-/** Where a photo lands in its Album's stack, the same on every reload. The first card stays near the middle. */
-export function cardPose(photo: Photo, index: number) {
+function rngFor(photo: Photo) {
   let seed = 0;
   for (const c of photo.id) seed = (Math.imul(seed, 31) + c.charCodeAt(0)) | 0;
-  const rng = mulberry32(seed);
+  return mulberry32(seed);
+}
+
+/** Where a photo lands in its Album's stack, the same on every reload. The first card stays near the middle. */
+export function cardPose(photo: Photo, index: number) {
+  const rng = rngFor(photo);
   const side = rng() < 0.5 ? -1 : 1;
   if (index === 0) return { x: 0, y: 0, rotate: (rng() - 0.5) * 6 };
   return { x: side * (8 + rng() * 12), y: -(2 + rng() * 10), rotate: side * (4 + rng() * 5) };
 }
 
+/** How far a sunk Album's first card leans, more than when it's active. */
+function sunkTilt(photo: Photo) {
+  const rng = rngFor(photo);
+  const side = rng() < 0.5 ? -1 : 1;
+  return side * (5 + rng() * 4);
+}
+
 /** Where the card of `photo` is on screen, for the Lightbox to grow from or shrink back into. */
-export function cardOnScreen(photo: Photo, index: number) {
+export function cardOnScreen(photo: Photo) {
   const el = document.querySelector<HTMLElement>(`[data-photo="${photo.id}"]`);
   if (!el) return null;
   // A rotated card's bounding box grows, but keeps its centre.
   const box = el.getBoundingClientRect();
-  return { x: box.left + box.width / 2, y: box.top + box.height / 2, size: CARD_SIZE, rotate: cardPose(photo, index).rotate };
+  // Read off the card rather than its pose, since it leans differently sunk and active and may be mid-way.
+  const transform = getComputedStyle(el).transform;
+  const { a, b } = new DOMMatrix(transform === 'none' ? undefined : transform);
+  return { x: box.left + box.width / 2, y: box.top + box.height / 2, size: CARD_SIZE, rotate: (Math.atan2(b, a) * 180) / Math.PI };
 }
 
 export type CardOnScreen = NonNullable<ReturnType<typeof cardOnScreen>>;
@@ -71,7 +85,7 @@ export function Albums({ chapters, active, away, onOpen }: Props) {
                 photo={photo}
                 index={index}
                 count={chapter.album!.length}
-                under={cardPose(chapter.album![0], 0).rotate}
+                under={sunkTilt(chapter.album![0])}
                 away={photo.id === away}
               />
             ))}
@@ -86,7 +100,7 @@ interface CardProps {
   photo: Photo;
   index: number;
   count: number;
-  /** How the first card of the Album is turned, for the others to hide under it. */
+  /** How the first card leans while the Album is sunk, for the others to hide under it. */
   under: number;
   away: boolean;
 }
@@ -95,7 +109,7 @@ function Card({ photo, index, count, under, away }: CardProps) {
   const pose = cardPose(photo, index);
   const variants: Variants = {
     // Every card hides under the first one, so a sunk Album shows a single photo.
-    rest: index === 0 ? { ...pose, opacity: 1 } : { x: 0, y: 0, rotate: under, opacity: 0, transition: { duration: 0.25 } },
+    rest: index === 0 ? { ...pose, rotate: under, opacity: 1 } : { x: 0, y: 0, rotate: under, opacity: 0, transition: { duration: 0.25 } },
     active: { ...pose, opacity: 1, transition: { ...RISE, delay: index === 0 ? 0 : FAN_DELAY + (index - 1) * FAN_STAGGER } },
   };
   return (
