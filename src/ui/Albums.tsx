@@ -67,6 +67,7 @@ export function Albums({ chapters, active, away, onOpen }: Props) {
       {chapters.map((chapter, i) => {
         if (!chapter.album?.length) return null;
         const isActive = chapter === active;
+        const awayAt = chapter.album.findIndex((p) => p.id === away);
         return (
           <motion.button
             key={chapter.title}
@@ -86,7 +87,8 @@ export function Albums({ chapters, active, away, onOpen }: Props) {
                 index={index}
                 count={chapter.album!.length}
                 under={sunkTilt(chapter.album![0])}
-                away={photo.id === away}
+                away={index === awayAt}
+                covering={index < awayAt}
               />
             ))}
           </motion.button>
@@ -103,9 +105,11 @@ interface CardProps {
   /** How the first card leans while the Album is sunk, for the others to hide under it. */
   under: number;
   away: boolean;
+  /** Lies on top of the card that's away, and would be crossed by the Lightbox photo flying back into it. */
+  covering: boolean;
 }
 
-function Card({ photo, index, count, under, away }: CardProps) {
+function Card({ photo, index, count, under, away, covering }: CardProps) {
   const pose = cardPose(photo, index);
   const variants: Variants = {
     // Every card hides under the first one, so a sunk Album shows a single photo.
@@ -114,7 +118,7 @@ function Card({ photo, index, count, under, away }: CardProps) {
   };
   return (
     <motion.span
-      className="card"
+      className={`card${covering ? ' covering' : ''}`}
       data-photo={photo.id}
       variants={variants}
       style={{ zIndex: count - index, visibility: away ? 'hidden' : 'visible' }}
