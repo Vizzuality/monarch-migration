@@ -32,7 +32,7 @@
   --timeline-height: 86px;
   --bar-height: 17px;
   /* How far an open Album reaches above the timeline: a raised card plus the highest, most turned one fanned out. */
-  --album-height: 114px;
+  --album-height: 76px;
 }
 
 * {

@@ -18,7 +18,7 @@ export function cardPose(photo: Photo, index: number) {
   const rng = mulberry32(seed);
   const side = rng() < 0.5 ? -1 : 1;
   if (index === 0) return { x: 0, y: 0, rotate: (rng() - 0.5) * 6 };
-  return { x: side * (12 + rng() * 22), y: -(4 + rng() * 24), rotate: side * (5 + rng() * 9) };
+  return { x: side * (8 + rng() * 12), y: -(2 + rng() * 10), rotate: side * (4 + rng() * 5) };
 }
 
 /** Where the card of `photo` is on screen, for the Lightbox to grow from or shrink back into. */
@@ -35,7 +35,8 @@ export type CardOnScreen = NonNullable<ReturnType<typeof cardOnScreen>>;
 const album: Variants = {
   // Sunk behind the timeline with only the top of the first photo showing.
   rest: { y: 29, transition: RISE },
-  active: { y: -13, transition: RISE },
+  // Still tucked a little into the timeline, so the active Album lifts rather than leaps.
+  active: { y: 6, transition: RISE },
 };
 
 interface Props {
