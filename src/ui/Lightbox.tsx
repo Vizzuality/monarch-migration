@@ -22,7 +22,9 @@ const DIMMED = { backgroundColor: 'rgba(5, 5, 7, 0.55)', backdropFilter: 'blur(1
 const HINT_OFFSET = { x: 24, y: -43 };
 
 function framed() {
-  const height = window.innerHeight * PHOTO_HEIGHT;
+  // The photo is clipped at the timeline, so on a short window it shrinks to stay clear of it.
+  const timeline = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--timeline-height'));
+  const height = Math.min(window.innerHeight * PHOTO_HEIGHT, window.innerHeight - 2 * (timeline + 16));
   const width = height * PHOTO_ASPECT;
   // Keeps the photo and its caption on screen together when the window is narrow.
   const left = Math.max(16, Math.min((window.innerWidth - width) / 2, window.innerWidth - width - CAPTION_GAP - CAPTION_WIDTH - 16));
@@ -105,31 +107,34 @@ export function Lightbox({ chapter, index, from, onIndex, onClose }: Props) {
         transition={{ duration: 0.4 }}
       />
 
-      <motion.div
-        className="lightbox-photo"
-        custom={from}
-        variants={{ from: geometry.from, shown: { ...frame, opacity: 1 }, to: geometry.to }}
-        initial="from"
-        animate="shown"
-        exit="to"
-        transition={MORPH}
-        onClick={onClose}
-        onPointerMove={(e) => setHint({ x: e.clientX, y: e.clientY })}
-        onPointerLeave={() => setHint(null)}
-      >
-        <AnimatePresence initial={false}>
-          <motion.img
-            key={photo.id}
-            src={photo.src}
-            alt={photo.alt}
-            draggable={false}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
-          />
-        </AnimatePresence>
-      </motion.div>
+      {/* Clipped at the timeline, so the photo grows out of and sinks back behind it like its card. */}
+      <div className="lightbox-stage">
+        <motion.div
+          className="lightbox-photo"
+          custom={from}
+          variants={{ from: geometry.from, shown: { ...frame, opacity: 1 }, to: geometry.to }}
+          initial="from"
+          animate="shown"
+          exit="to"
+          transition={MORPH}
+          onClick={onClose}
+          onPointerMove={(e) => setHint({ x: e.clientX, y: e.clientY })}
+          onPointerLeave={() => setHint(null)}
+        >
+          <AnimatePresence initial={false}>
+            <motion.img
+              key={photo.id}
+              src={photo.src}
+              alt={photo.alt}
+              draggable={false}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+            />
+          </AnimatePresence>
+        </motion.div>
+      </div>
 
       <motion.div
         className="lightbox-caption"

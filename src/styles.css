@@ -419,7 +419,15 @@ p {
   inset: 0;
 }
 
+.lightbox-stage {
+  position: absolute;
+  inset: 0 0 var(--timeline-height);
+  overflow: hidden;
+  pointer-events: none;
+}
+
 .lightbox-photo {
+  pointer-events: auto;
   position: absolute;
   overflow: hidden;
   border: 1px solid transparent;
