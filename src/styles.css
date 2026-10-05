@@ -328,6 +328,27 @@ p {
   letter-spacing: 0.4px;
 }
 
+/* Laptop screens: a smaller card that leaves the middle of the map in view. */
+@media (max-height: 900px) {
+  .legend-card {
+    width: 330px;
+    padding: 36px 70px 38px 30px;
+  }
+
+  .legend-card ul {
+    gap: 20px;
+  }
+
+  .legend-card h2 {
+    font-size: 12px;
+  }
+
+  .legend-card p {
+    margin-top: 10px;
+    font-size: 16px;
+  }
+}
+
 /* Albums: each stands on the timeline halfway through its Chapter, and sinks behind it the rest of the year. */
 
 .albums {
