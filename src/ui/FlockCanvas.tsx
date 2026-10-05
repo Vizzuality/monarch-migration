@@ -96,15 +96,27 @@ async function bake(model: SVGSVGElement): Promise<Sprites> {
 /**
  * One canvas covering the window that draws every CanvasButterfly inside it, placed relative
  * to `origin`, with its feet on the point it flies to. `startled` is when the flock was last startled
- * into flicking its wings, if ever.
+ * into flicking its wings, if ever. Every butterfly is drawn `scale` times its size.
  */
-export function FlockCanvas({ origin, startled = -Infinity, children }: { origin: RefObject<HTMLElement | null>; startled?: number; children: ReactNode }) {
+export function FlockCanvas({
+  origin,
+  startled = -Infinity,
+  scale = 1,
+  children,
+}: {
+  origin: RefObject<HTMLElement | null>;
+  startled?: number;
+  scale?: number;
+  children: ReactNode;
+}) {
   const [painting] = useState(() => new Map<number, Entry>());
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const modelRef = useRef<HTMLDivElement>(null);
   const [sprites, setSprites] = useState<Sprites | null>(null);
   const startledRef = useRef(startled);
   startledRef.current = startled;
+  const scaleRef = useRef(scale);
+  scaleRef.current = scale;
 
   useEffect(() => {
     const model = modelRef.current?.querySelector('svg');
@@ -150,7 +162,7 @@ export function FlockCanvas({ origin, startled = -Infinity, children }: { origin
           const flick = flickScale((now - startledRef.current) / 1000 - (wings.restDelay * 0.12 - 0.02));
           sprite = sprites.perched[nearest(PERCHED, flick ?? perchedScale(wings, t))];
         }
-        const k = bird.size / width;
+        const k = (bird.size * scaleRef.current) / width;
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
         ctx.translate(at.left - box.left + flight.x.get(), at.top - box.top + flight.y.get());
         ctx.rotate((flight.rotate.get() * Math.PI) / 180);
