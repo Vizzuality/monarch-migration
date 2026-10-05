@@ -26,6 +26,10 @@
   --timeline: #111719;
   --track: rgba(50, 69, 72, 0.34);
   --card: rgba(18, 29, 31, 0.4);
+  /* The legend book's page, ink and edge. */
+  --page: #f2e5c9;
+  --page-ink: #263a55;
+  --page-edge: #da4b2a;
   --display: 'ITC Garamond Narrow', Georgia, serif;
   --serif: 'ITC Garamond Condensed', Georgia, serif;
   --sans: Futura, 'Trebuchet MS', sans-serif;
@@ -245,6 +249,12 @@ p {
   height: 56px;
 }
 
+.legend-filters {
+  position: absolute;
+  width: 0;
+  height: 0;
+}
+
 .legend-button {
   position: relative;
   width: 56px;
@@ -286,11 +296,23 @@ p {
   right: -15px;
   width: 398px;
   padding: 48px 74px 54px 37px;
+  color: var(--page-ink);
+  isolation: isolate;
+  /* Unfolds from the open book. */
+  transform-origin: calc(100% - 60px) 35px;
+}
+
+/* The paper sits behind the text, so the rough edge doesn't warp the words. */
+.legend-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
   border-radius: 52px;
-  background: var(--card);
-  backdrop-filter: blur(48px);
-  -webkit-backdrop-filter: blur(48px);
-  transform-origin: top right;
+  border-bottom: 5px solid var(--page-edge);
+  background: var(--page);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+  filter: url(#legend-paper);
 }
 
 .legend-card ul {
@@ -310,13 +332,14 @@ p {
   line-height: 1.28;
   letter-spacing: 0.56px;
   text-transform: uppercase;
-  color: #fff;
 }
 
+/* The ink ring keeps the palest generation visible on the page. */
 .legend-card i {
   width: 10px;
   height: 10px;
   border-radius: 50%;
+  box-shadow: 0 0 0 1px var(--page-ink);
 }
 
 .legend-card p {

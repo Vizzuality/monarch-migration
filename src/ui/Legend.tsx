@@ -4,9 +4,17 @@ import { useEffect, useRef, useState } from 'react';
 
 import { GENERATIONS } from '../monarch/generations';
 
+// The card waits for the book's cover to swing past, then unfolds out of it. Closing runs the other way round.
+const BOOK_OPENS = 0.5;
+const CARD_FOLDS = 0.2;
+
 const card: Variants = {
-  closed: { opacity: 0, scale: 0.9, transition: { duration: 0.2, ease: 'easeIn' } },
-  open: { opacity: 1, scale: 1, transition: { duration: 0.3, ease: 'easeOut', delayChildren: 0.05, staggerChildren: 0.04 } },
+  closed: { opacity: 0, scale: 0.15, transition: { duration: CARD_FOLDS, ease: 'easeIn' } },
+  open: {
+    opacity: 1,
+    scale: 1,
+    transition: { delay: BOOK_OPENS, duration: 0.4, ease: [0.2, 0.9, 0.3, 1], delayChildren: BOOK_OPENS + 0.15, staggerChildren: 0.05 },
+  },
 };
 
 const item: Variants = {
@@ -39,7 +47,7 @@ export function Legend() {
     };
   }, []);
 
-  // Opening plays the book forwards, closing plays it backwards from wherever it is.
+  // Opening plays the book forwards, closing plays it backwards from wherever it is, once the card has folded away.
   useEffect(() => {
     const item = book.current;
     if (!item) return;
@@ -48,7 +56,12 @@ export function Legend() {
       return;
     }
     item.setDirection(open ? 1 : -1);
-    item.play();
+    if (open) {
+      item.play();
+      return;
+    }
+    const folded = setTimeout(() => item.play(), CARD_FOLDS * 1000);
+    return () => clearTimeout(folded);
   }, [open, reduced]);
 
   useEffect(() => {
@@ -69,6 +82,13 @@ export function Legend() {
 
   return (
     <div className="legend" ref={ref}>
+      {/* Roughs up the card's edge like the page of a book. */}
+      <svg className="legend-filters" aria-hidden="true">
+        <filter id="legend-paper">
+          <feTurbulence type="fractalNoise" baseFrequency="0.16" numOctaves={3} seed={2696} />
+          <feDisplacementMap in="SourceGraphic" scale={6} xChannelSelector="R" yChannelSelector="G" />
+        </filter>
+      </svg>
       <AnimatePresence>
         {open && (
           <motion.div id="legend-card" className="legend-card" variants={card} initial="closed" animate="open" exit="closed">
