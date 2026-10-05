@@ -6,7 +6,9 @@ import type { Chapter } from '../data/calendar';
 import type { CardOnScreen } from './Albums';
 
 const MORPH: Transition = { type: 'spring', stiffness: 220, damping: 30 };
-const CARD_RADIUS = 14;
+// The card's outline and shadow, faded out as it grows so it lands on the card exactly like it.
+const CARD_EDGE = { borderColor: 'rgba(0, 0, 0, 1)', boxShadow: '0px -2px 5px rgba(0, 0, 0, 0.8)' };
+const PHOTO_EDGE = { borderColor: 'rgba(0, 0, 0, 0)', boxShadow: '0px -2px 5px rgba(0, 0, 0, 0)' };
 // The photo takes this share of the viewport's height, at 3:4.
 const PHOTO_HEIGHT = 0.72;
 const PHOTO_ASPECT = 3 / 4;
@@ -21,7 +23,7 @@ function framed() {
   const width = height * PHOTO_ASPECT;
   // Keeps the photo and its caption on screen together when the window is narrow.
   const left = Math.max(16, Math.min((window.innerWidth - width) / 2, window.innerWidth - width - CAPTION_GAP - CAPTION_WIDTH - 16));
-  return { left, top: (window.innerHeight - height) / 2, width, height, rotate: 0, borderRadius: CARD_RADIUS };
+  return { left, top: (window.innerHeight - height) / 2, width, height, rotate: 0, ...PHOTO_EDGE };
 }
 
 const onCard = ({ x, y, size, rotate }: CardOnScreen) => ({
@@ -30,7 +32,7 @@ const onCard = ({ x, y, size, rotate }: CardOnScreen) => ({
   width: size,
   height: size,
   rotate,
-  borderRadius: CARD_RADIUS,
+  ...CARD_EDGE,
 });
 
 interface Props {

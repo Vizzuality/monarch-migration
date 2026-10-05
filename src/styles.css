@@ -424,6 +424,8 @@ p {
 .lightbox-photo {
   position: absolute;
   overflow: hidden;
+  border: 1px solid transparent;
+  border-radius: 14px;
   cursor: pointer;
 }
 
