@@ -254,25 +254,10 @@ p {
   background: none;
 }
 
-.legend-button img {
+.legend-book {
   position: absolute;
-  inset: -3.56px;
-  width: 63.12px;
-  height: 63.12px;
-  transition: opacity 150ms;
-}
-
-.legend-button .hover,
-.legend-button .active,
-.legend-button:hover .rest,
-.legend-button.open .rest,
-.legend-button.open .hover {
-  opacity: 0;
-}
-
-.legend-button:hover .hover,
-.legend-button.open .active {
-  opacity: 1;
+  inset: -40px;
+  pointer-events: none;
 }
 
 .legend-button:focus-visible {

@@ -1,9 +1,7 @@
 import { AnimatePresence, motion, useReducedMotion, type Variants } from 'motion/react';
+import type { AnimationItem } from 'lottie-web';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
-import bookClosed from '../assets/book-closed.svg';
-import bookHover from '../assets/book-hover.svg';
-import bookOpen from '../assets/book-open.svg';
 import { GENERATIONS } from '../monarch/generations';
 import { Flock, type Roost } from './Flock';
 import { CanvasButterfly, FlockCanvas } from './FlockCanvas';
@@ -39,6 +37,10 @@ export function Legend() {
   const [cardSize, setCardSize] = useState<{ width: number; height: number } | null>(null);
   const ref = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
+  const bookRef = useRef<HTMLSpanElement>(null);
+  const book = useRef<AnimationItem | null>(null);
+  const openRef = useRef(open);
+  openRef.current = open;
   const toggle = (next: boolean) => {
     setOpen(next);
     setToggles((n) => n + 1);
@@ -56,6 +58,34 @@ export function Legend() {
     const box = { left: BUTTON + CARD_OVERHANG - cardSize.width, top: -CARD_OVERHANG, ...cardSize };
     return { key: `card:${toggles}`, perches: outlineSpots(box, CARD_RADIUS, 6), free: apart(40), air: nearby };
   }, [open, cardSize, toggles]);
+
+  // The player and the 1.4 MB animation load after the first paint, so they stay out of the main bundle.
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([import('lottie-web/build/player/lottie_light'), import('../assets/book.json')]).then(([{ default: lottie }, { default: animationData }]) => {
+      if (cancelled || !bookRef.current) return;
+      const item = lottie.loadAnimation({ container: bookRef.current, renderer: 'svg', loop: false, autoplay: false, animationData });
+      item.goToAndStop(openRef.current ? item.totalFrames - 1 : 0, true);
+      book.current = item;
+    });
+    return () => {
+      cancelled = true;
+      book.current?.destroy();
+      book.current = null;
+    };
+  }, []);
+
+  // Opening plays the book forwards, closing plays it backwards from wherever it is.
+  useEffect(() => {
+    const item = book.current;
+    if (!item) return;
+    if (reduced) {
+      item.goToAndStop(open ? item.totalFrames - 1 : 0, true);
+      return;
+    }
+    item.setDirection(open ? 1 : -1);
+    item.play();
+  }, [open, reduced]);
 
   useEffect(() => {
     if (!open) return;
@@ -105,9 +135,7 @@ export function Legend() {
         aria-controls="legend-card"
         onClick={() => toggle(!open)}
       >
-        <img className="rest" src={bookClosed} alt="" />
-        <img className="hover" src={bookHover} alt="" />
-        <img className="active" src={bookOpen} alt="" />
+        <span className="legend-book" ref={bookRef} />
       </button>
     </div>
   );
