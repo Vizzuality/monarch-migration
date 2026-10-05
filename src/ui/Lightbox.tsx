@@ -21,7 +21,7 @@ function framed() {
   const width = height * PHOTO_ASPECT;
   // Keeps the photo and its caption on screen together when the window is narrow.
   const left = Math.max(16, Math.min((window.innerWidth - width) / 2, window.innerWidth - width - CAPTION_GAP - CAPTION_WIDTH - 16));
-  return { left, top: (window.innerHeight - height) / 2, width, height, rotate: 0, borderRadius: 0 };
+  return { left, top: (window.innerHeight - height) / 2, width, height, rotate: 0, borderRadius: CARD_RADIUS };
 }
 
 const onCard = ({ x, y, size, rotate }: CardOnScreen) => ({
