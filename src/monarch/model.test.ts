@@ -45,7 +45,37 @@ describe('a Lineage on the map and in the Swarm', () => {
     for (const t of days) {
       const frame = sim.frame(t, 0);
       expect(frame.length).toBeGreaterThanOrEqual(COUNT);
-      for (let i = 0; i < COUNT; i++) expect(frame.colors[i * 4 + 3], `lineage ${i} on day ${t}`).toBeGreaterThan(0);
+      for (const member of sim.swarm(t)) {
+        // A butterfly resting in its Colony is drawn as part of it instead.
+        if (member.state !== 'resting') expect(frame.colors[member.lineage * 4 + 3], `lineage ${member.lineage} on day ${t}`).toBeGreaterThan(0);
+      }
     }
+  });
+});
+
+describe('a Colony on the map', () => {
+  const midwinter = 20;
+  const midsummer = 200;
+
+  it('holds every one of its butterflies in midwinter and none in midsummer', () => {
+    for (const colony of sim.frame(midwinter, 0).colonies) expect(colony.share).toBe(1);
+    for (const colony of sim.frame(midsummer, 0).colonies) expect(colony.share).toBe(0);
+  });
+
+  it('takes in the butterflies resting there, which leave no dot of their own', () => {
+    const frame = sim.frame(midwinter, 0);
+    for (const member of sim.swarm(midwinter)) {
+      expect(member.state).toBe('resting');
+      expect(frame.colors[member.lineage * 4 + 3]).toBe(0);
+    }
+  });
+
+  it('grows through the autumn arrivals and drains through the spring departures', () => {
+    const shares = (from: number, to: number) =>
+      Array.from({ length: to - from + 1 }, (_, k) => sim.frame(from + k, 0).colonies.reduce((sum, c) => sum + c.share, 0));
+    const autumn = shares(300, 364);
+    const spring = shares(40, 120);
+    autumn.slice(1).forEach((s, k) => expect(s).toBeGreaterThanOrEqual(autumn[k]));
+    spring.slice(1).forEach((s, k) => expect(s).toBeLessThanOrEqual(spring[k]));
   });
 });

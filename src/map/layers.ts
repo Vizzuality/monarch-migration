@@ -1,10 +1,11 @@
 import type { Layer } from '@deck.gl/core';
 import { TripsLayer } from '@deck.gl/geo-layers';
-import { ScatterplotLayer, TextLayer } from '@deck.gl/layers';
+import { IconLayer, ScatterplotLayer, TextLayer } from '@deck.gl/layers';
 
 import { PLACE_LABELS } from '../monarch/geo';
 import { CLOSE_UP } from '../monarch/scene';
-import type { Frame, Ring, Simulation, Trip } from '../monarch/types';
+import { GENERATIONS } from '../monarch/generations';
+import type { ColonyGlow, Frame, Ring, Simulation, Trip } from '../monarch/types';
 
 /**
  * Plain alpha blending: overlaps deepen toward the animals' own color
@@ -59,6 +60,30 @@ function tripLayers(sim: Simulation, day: number): Layer[] {
   );
 }
 
+const GLOW_PX = 128;
+let glowAtlas: string | undefined;
+
+/** A soft white disc fading out to its rim, tinted per Colony by the layer. Drawn once, on first use. */
+function glowImage() {
+  if (glowAtlas) return glowAtlas;
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = GLOW_PX;
+  const ctx = canvas.getContext('2d')!;
+  const r = GLOW_PX / 2;
+  const fill = ctx.createRadialGradient(r, r, 0, r, r, r);
+  fill.addColorStop(0, 'rgba(255, 255, 255, 1)');
+  fill.addColorStop(0.25, 'rgba(255, 255, 255, 0.6)');
+  fill.addColorStop(0.55, 'rgba(255, 255, 255, 0.18)');
+  fill.addColorStop(1, 'rgba(255, 255, 255, 0)');
+  ctx.fillStyle = fill;
+  ctx.fillRect(0, 0, GLOW_PX, GLOW_PX);
+  glowAtlas = canvas.toDataURL();
+  return glowAtlas;
+}
+
+const GLOW_MAPPING = { glow: { x: 0, y: 0, width: GLOW_PX, height: GLOW_PX, mask: true } };
+const [SUPER_R, SUPER_G, SUPER_B] = GENERATIONS[0].color;
+
 interface LayerInput {
   sim: Simulation;
   frame: Frame;
@@ -91,6 +116,22 @@ export function buildLayers({ sim, frame, day, zoom }: LayerInput): Layer[] {
       fontWeight: 600,
       characterSet: 'auto',
       updateTriggers: { getColor: closeUp },
+    }),
+
+    // Lies flat under the trails, growing with the butterflies that melt into it.
+    new IconLayer<ColonyGlow>({
+      id: 'colonies',
+      data: frame.colonies,
+      iconAtlas: glowImage(),
+      iconMapping: GLOW_MAPPING,
+      getIcon: () => 'glow',
+      getPosition: (d) => d.position,
+      getSize: (d) => d.size * (0.45 + 0.55 * Math.sqrt(d.share)) * d.breath,
+      getColor: (d) => [SUPER_R, SUPER_G, SUPER_B, Math.round(190 * Math.min(1, d.share * d.breath))],
+      sizeUnits: 'meters',
+      billboard: false,
+      alphaCutoff: 0,
+      parameters: BLEND,
     }),
 
     ...tripLayers(sim, day),
