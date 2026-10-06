@@ -635,7 +635,7 @@ p {
 /* Behind the playhead the bar is switched off, darkened rather than see-through, with a hard edge where it meets the rest. */
 .bar.past {
   clip-path: inset(0 calc(100% - var(--past)) 0 0);
-  filter: grayscale(0.85) brightness(0.4);
+  filter: grayscale(0.6) brightness(0.6);
 }
 
 /* Shrinks towards the middle of the bar, leaving the track behind it, while a Generation fades out. */
@@ -651,7 +651,7 @@ p {
   display: grid;
   background: linear-gradient(
     to right,
-    color-mix(in srgb, var(--cream) 40%, var(--timeline-fill)) var(--past),
+    color-mix(in srgb, var(--cream) 60%, var(--timeline-fill)) var(--past),
     var(--cream) var(--past)
   );
   -webkit-background-clip: text;
