@@ -1,4 +1,13 @@
-import { AnimatePresence, motion, useReducedMotion, type Transition } from 'motion/react';
+import {
+  AnimatePresence,
+  motion,
+  useIsPresent,
+  useMotionTemplate,
+  useReducedMotion,
+  useSpring,
+  useTransform,
+  type Transition,
+} from 'motion/react';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 import arrow from '../assets/arrow.svg';
@@ -20,6 +29,15 @@ const CLEAR = { backgroundColor: 'rgba(5, 5, 7, 0)', backdropFilter: 'blur(0px)'
 const DIMMED = { backgroundColor: 'rgba(5, 5, 7, 0.55)', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)' };
 // The close hint sits up and to the right of the pointer.
 const HINT_OFFSET = { x: 24, y: -43 };
+// How far the photo leans towards the pointer, in degrees, and how deep it looks while doing it.
+const TILT = 6;
+const TILT_PERSPECTIVE = 1000;
+const TILT_SPRING = { stiffness: 150, damping: 20 };
+// How far the photo slides inside its frame, as a share of its size, and how much it's zoomed to keep its edges hidden.
+const PARALLAX = 0.025;
+const PARALLAX_ZOOM = 1 + 2 * PARALLAX + 0.01;
+// How far the shadow falls away from the light, in pixels.
+const SHADOW_THROW = 28;
 
 function framed() {
   // The photo is clipped at the timeline, so on a short window it shrinks to stay clear of it.
@@ -56,6 +74,53 @@ export function Lightbox({ chapter, index, from, onIndex, onClose }: Props) {
   const dialog = useRef<HTMLDialogElement>(null);
   const [frame, setFrame] = useState(framed);
   const [hint, setHint] = useState<{ x: number; y: number } | null>(null);
+  const present = useIsPresent();
+  // Only a mouse can lean the photo, and only once it has landed, so it never adds to the morph.
+  const [canTilt] = useState(() => !reduced && matchMedia('(hover: hover) and (pointer: fine)').matches);
+  const [landed, setLanded] = useState(false);
+  const tilting = canTilt && landed && present;
+  // Where the pointer is over the photo, from -1 to 1 each way, and how strongly the light catches it.
+  const across = useSpring(0, TILT_SPRING);
+  const down = useSpring(0, TILT_SPRING);
+  const shine = useSpring(0, TILT_SPRING);
+  // The side under the pointer is pressed in.
+  const rotateY = useTransform(across, (a) => a * TILT);
+  const rotateX = useTransform(down, (d) => -d * TILT);
+  // The photo sits a little behind the glass, so it slides against the lean.
+  const photoX = useTransform(across, (a) => `${-a * PARALLAX * 100}%`);
+  const photoY = useTransform(down, (d) => `${-d * PARALLAX * 100}%`);
+  // Zoomed only while it can slide, so it matches its card again by the time it shrinks into it.
+  const photoScale = useTransform(shine, [0, 1], [1, PARALLAX_ZOOM]);
+  const lightX = useTransform(across, (a) => (a + 1) * 50);
+  const lightY = useTransform(down, (d) => (d + 1) * 50);
+  const glareBackground = useMotionTemplate`radial-gradient(circle at ${lightX}% ${lightY}%, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0) 50%), linear-gradient(115deg, rgba(255, 255, 255, 0) 36%, rgba(255, 255, 255, 0.65) 47%, rgba(255, 255, 255, 0.15) 53%, rgba(255, 255, 255, 0) 64%) ${lightX}% ${lightY}% / 300% 300%`;
+  // A rim of light along the edges nearest the pointer.
+  const rim = useTransform(
+    [across, down, shine],
+    ([a, d, s]: number[]) => `inset ${-a * 4}px ${-d * 4}px 5px -2px rgba(255, 255, 255, ${0.55 * s})`,
+  );
+  const shadow = useTransform(
+    [across, down, shine],
+    ([a, d, s]: number[]) =>
+      `drop-shadow(${-a * SHADOW_THROW}px ${18 - d * SHADOW_THROW}px 40px rgba(0, 0, 0, ${0.75 * s}))`,
+  );
+
+  const flatten = () => {
+    across.set(0);
+    down.set(0);
+    shine.set(0);
+  };
+
+  const lean = (x: number, y: number) => {
+    across.set(((x - frame.left) / frame.width) * 2 - 1);
+    down.set(((y - frame.top) / frame.height) * 2 - 1);
+    shine.set(1);
+  };
+
+  // Closing drops the photo flat as it shrinks, so it lands on its card the way the card lies.
+  useEffect(() => {
+    if (!present) flatten();
+  }, [present]);
 
   // Before the photo is measured, or it would grow inside a closed, invisible dialog.
   useLayoutEffect(() => {
@@ -117,9 +182,17 @@ export function Lightbox({ chapter, index, from, onIndex, onClose }: Props) {
           animate="shown"
           exit="to"
           transition={MORPH}
+          style={{ rotateX, rotateY, transformPerspective: TILT_PERSPECTIVE, filter: canTilt ? shadow : undefined }}
+          onAnimationComplete={(definition) => definition === 'shown' && setLanded(true)}
           onClick={onClose}
-          onPointerMove={(e) => setHint({ x: e.clientX, y: e.clientY })}
-          onPointerLeave={() => setHint(null)}
+          onPointerMove={(e) => {
+            setHint({ x: e.clientX, y: e.clientY });
+            if (tilting) lean(e.clientX, e.clientY);
+          }}
+          onPointerLeave={() => {
+            setHint(null);
+            flatten();
+          }}
         >
           <AnimatePresence initial={false}>
             <motion.img
@@ -127,12 +200,19 @@ export function Lightbox({ chapter, index, from, onIndex, onClose }: Props) {
               src={photo.src}
               alt={photo.alt}
               draggable={false}
+              style={{ x: photoX, y: photoY, scale: photoScale }}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.3 }}
             />
           </AnimatePresence>
+          {canTilt && (
+            <>
+              <motion.div className="lightbox-glare" style={{ background: glareBackground, opacity: shine }} aria-hidden />
+              <motion.div className="lightbox-rim" style={{ boxShadow: rim }} aria-hidden />
+            </>
+          )}
         </motion.div>
       </div>
 
