@@ -1,7 +1,18 @@
 import type { RGB } from '../data/color';
 import type { LngLat } from '../data/random';
-import type { TripBucket } from '../data/trips';
+import type { Bucket, Route } from '../data/trips';
 import type { Generation } from './generations';
+
+/** One leg of a Lineage's year, flown by one of its butterflies. */
+export interface Trip extends Route {
+  /** The id of the Lineage it belongs to. */
+  lineage: number;
+  generation: Generation;
+  /** The butterfly's color, the same the map and the Swarm give it while it flies this leg. */
+  color: RGB;
+}
+
+export type TripBucket = Bucket<Trip>;
 
 export interface Ring {
   position: LngLat;
@@ -11,6 +22,10 @@ export interface Ring {
   size: number;
 }
 
+/**
+ * Everything the map draws on one day. The first slots hold each Lineage's living member, in id
+ * order; the scenery around it (the rest of a clutch, a mother fading where she laid) follows.
+ */
 export interface Frame {
   length: number;
   positions: Float32Array;
@@ -30,6 +45,8 @@ export type SwarmState = 'flying' | 'resting' | 'developing';
 
 /** One Lineage of the Swarm on a given day. */
 export interface SwarmMember {
+  /** The Lineage's id, which is also its slot in the Frame. */
+  lineage: number;
   color: RGB;
   state: SwarmState;
 }
