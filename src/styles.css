@@ -565,13 +565,35 @@ p {
     linear-gradient(#363e41, #1e282c) border-box;
   box-shadow: 0 4px 4px rgba(0, 0, 0, 0.5);
   color: var(--cream);
+  transition:
+    box-shadow 0.15s,
+    transform 0.1s ease-out;
+}
+
+/* Lifts the fill without washing out the icon: an inset shade sits over the background but under the content. */
+.play:hover {
+  box-shadow:
+    0 4px 4px rgba(0, 0, 0, 0.5),
+    inset 0 0 0 42px rgba(228, 210, 186, 0.06);
+}
+
+.play:active {
+  transform: scale(0.95);
+}
+
+.play:focus-visible {
+  outline: 2px solid var(--cream);
+  outline-offset: 2px;
 }
 
 .play-icon {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
+  display: block;
+  margin: auto;
+  transition: transform 0.15s ease-out;
+}
+
+.play:hover .play-icon {
+  transform: scale(1.1);
 }
 
 .track {
@@ -703,6 +725,10 @@ p {
     color: var(--ink);
   }
 
+  .play:hover {
+    box-shadow: inset 0 0 0 42px rgba(5, 5, 7, 0.06);
+  }
+
   /* The whole strip still takes a finger, around a bar drawn thin across its middle. */
   .track {
     margin: 0 16px;
@@ -721,5 +747,12 @@ p {
   .playhead {
     top: 12px;
     bottom: 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .play:active,
+  .play:hover .play-icon {
+    transform: none;
   }
 }
