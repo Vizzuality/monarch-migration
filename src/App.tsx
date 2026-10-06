@@ -27,6 +27,8 @@ import { Timeline } from './ui/Timeline';
 
 // A full year plays in ~2 minutes.
 const DAYS_PER_SECOND = 3;
+// The legend is hidden for now, until it is ready to show.
+const SHOW_LEGEND = false;
 // Keeps the action clear of the chapter text and the timeline. The keyframes were framed with it.
 const PADDING = { top: 20, bottom: 150, left: 380, right: 320 };
 // On a phone the chapter text fills the bottom of the screen, so the action goes above it, under the logo.
@@ -256,7 +258,7 @@ export default function App() {
         <DayReadout story={story} />
       </div>
       {/* A phone has no room for them yet. */}
-      {!narrow && <Legend />}
+      {SHOW_LEGEND && !narrow && <Legend />}
       {!narrow && <Albums chapters={CHAPTERS} active={story.chapter} away={away} onOpen={openAlbum} />}
       <Timeline
         activity={sim.activity}

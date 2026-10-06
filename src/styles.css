@@ -25,7 +25,6 @@
   --ink: #050507;
   --timeline: #111719;
   --track: rgba(50, 69, 72, 0.34);
-  --card: rgba(18, 29, 31, 0.4);
   --display: Musetta, Georgia, serif;
   --serif: 'ITC Garamond Condensed', Georgia, serif;
   --sans: Futura, 'Trebuchet MS', sans-serif;
@@ -36,6 +35,8 @@
   --play-gap: 5px;
   --bar-height: 17px;
   --timeline-fill: #141b1e;
+  /* The hover the play and legend buttons share: a cream shade over the fill. */
+  --hover-wash: inset 0 0 0 42px rgba(228, 210, 186, 0.06);
   /* How far an open Album reaches above the timeline: a raised card plus the highest, most turned one fanned out. */
   --album-height: 76px;
 }
@@ -251,47 +252,41 @@ p {
 /* Legend */
 
 .legend {
+  --legend-top: 35px;
+  --legend-button: 59px;
+  --legend-gap: 12px;
   position: absolute;
-  top: 35px;
+  top: var(--legend-top);
   right: 37px;
-  width: 56px;
-  height: 56px;
+  width: var(--legend-button);
+  height: var(--legend-button);
 }
 
 .legend-button {
   position: relative;
-  width: 56px;
-  height: 56px;
+  display: grid;
+  place-items: center;
+  width: var(--legend-button);
+  height: var(--legend-button);
   padding: 0;
-  border: none;
-  background: none;
+  border: 1px solid #363e41;
+  border-radius: 50%;
+  background: var(--timeline-fill);
+  transition:
+    box-shadow 0.15s,
+    transform 0.1s ease-out;
 }
 
-.legend-button img {
-  position: absolute;
-  inset: -3.56px;
-  width: 63.12px;
-  height: 63.12px;
-  transition: opacity 150ms;
-}
-
-.legend-button .hover,
-.legend-button .active,
-.legend-button:hover .rest,
-.legend-button.open .rest,
-.legend-button.open .hover {
-  opacity: 0;
-}
-
-.legend-button:hover .hover,
-.legend-button.open .active {
-  opacity: 1;
+.legend-icon {
+  display: block;
+  width: 29px;
+  height: 29px;
+  transition: transform 0.15s ease-out;
 }
 
 .legend-button:focus-visible {
   outline: 2px solid var(--cream);
   outline-offset: 2px;
-  border-radius: 50%;
 }
 
 .flock-canvas {
@@ -308,25 +303,35 @@ p {
   pointer-events: none;
 }
 
+/* Full size on screens about 900px tall; on shorter ones the text and the room around it shrink, and past that the list scrolls, so it never reaches the open Albums. */
 .legend-card {
   position: absolute;
-  top: -15px;
-  right: -15px;
-  width: 398px;
-  padding: 48px 74px 54px 37px;
-  border-radius: 52px;
-  background: var(--card);
-  backdrop-filter: blur(48px);
-  -webkit-backdrop-filter: blur(48px);
+  top: calc(100% + var(--legend-gap));
+  right: 0;
+  width: 385px;
+  max-height: calc(100dvh - var(--legend-top) - var(--legend-button) - 2 * var(--legend-gap) - var(--timeline-height) - var(--album-height));
+  display: flex;
+  flex-direction: column;
+  padding: clamp(24px, 5.3vh, 48px) clamp(28px, 8.2vh, 74px) clamp(0px, 6vh - 48px, 6px) clamp(24px, 4.1vh, 37px);
+  border: 1px solid #363e41;
+  border-radius: 45px;
+  background: rgba(20, 27, 30, 0.5);
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
   transform-origin: top right;
 }
 
 .legend-card ul {
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: none;
   list-style: none;
   margin: 0;
-  padding: 0;
+  /* Room for the fade at the bottom, so the last line clears it once scrolled down. */
+  padding: 0 0 48px;
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 48px), transparent);
   display: grid;
-  gap: 30px;
+  gap: clamp(14px, 3.3vh, 30px);
 }
 
 .legend-card h2 {
@@ -348,10 +353,10 @@ p {
 }
 
 .legend-card p {
-  margin-top: 19px;
+  margin-top: clamp(6px, 2.1vh, 19px);
   font-family: var(--serif);
   font-weight: 300;
-  font-size: 20px;
+  font-size: clamp(16px, 2.2vh, 20px);
   line-height: 1.17;
   letter-spacing: 0.4px;
 }
@@ -582,10 +587,15 @@ p {
 .play:hover {
   box-shadow:
     0 4px 4px rgba(0, 0, 0, 0.5),
-    inset 0 0 0 42px rgba(228, 210, 186, 0.06);
+    var(--hover-wash);
 }
 
-.play:active {
+.legend-button:hover {
+  box-shadow: var(--hover-wash);
+}
+
+.play:active,
+.legend-button:active {
   transform: scale(0.95);
 }
 
@@ -600,7 +610,8 @@ p {
   transition: transform 0.15s ease-out;
 }
 
-.play:hover .play-icon {
+.play:hover .play-icon,
+.legend-button:hover .legend-icon {
   transform: scale(1.1);
 }
 
@@ -765,7 +776,9 @@ p {
 
 @media (prefers-reduced-motion: reduce) {
   .play:active,
-  .play:hover .play-icon {
+  .play:hover .play-icon,
+  .legend-button:active,
+  .legend-button:hover .legend-icon {
     transform: none;
   }
 }
