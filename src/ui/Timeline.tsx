@@ -2,8 +2,9 @@ import { AnimatePresence, motion } from 'motion/react';
 import { useMemo, useRef } from 'react';
 
 import playIcon from '../assets/play.svg';
-import { dateOf, MONTH_LENGTHS, MONTHS, YEAR_DAYS } from '../data/calendar';
-import { GENERATIONS, type Generation } from '../monarch/generations';
+import { MONTH_LENGTHS, MONTHS, YEAR_DAYS } from '../data/calendar';
+import { GENERATIONS } from '../monarch/generations';
+import type { StoryDay } from '../monarch/story';
 import type { Activity, SwarmMember } from '../monarch/types';
 import { useNarrow } from './narrow';
 import { Swarm } from './Swarm';
@@ -31,7 +32,7 @@ interface Props {
   activity: Activity;
   census: (day: number) => SwarmMember[];
   day: number;
-  dominant: Generation;
+  story: StoryDay;
   playing: boolean;
   onTogglePlay: () => void;
   onScrub: (day: number) => void;
@@ -76,7 +77,7 @@ function PauseIcon() {
   );
 }
 
-export function Timeline({ activity, census, day, dominant, playing, onTogglePlay, onScrub, onScrubStart, onScrubEnd }: Props) {
+export function Timeline({ activity, census, day, story, playing, onTogglePlay, onScrub, onScrubStart, onScrubEnd }: Props) {
   const bar = useMemo(() => barShape(activity), [activity]);
   // A phone gets a bare bar: the same colors, without the thinning, the months or the Swarm.
   const narrow = useNarrow();
@@ -88,8 +89,8 @@ export function Timeline({ activity, census, day, dominant, playing, onTogglePla
     onScrub(Math.min(YEAR_DAYS - 0.01, Math.max(0, ((clientX - rect.left) / rect.width) * YEAR_DAYS)));
   };
 
-  const { date, month } = dateOf(day);
-  const color = `rgb(${GENERATIONS[dominant].color})`;
+  const { date, month } = story.date;
+  const color = `rgb(${story.dominant.color})`;
 
   return (
     <div className="timeline">
@@ -115,7 +116,7 @@ export function Timeline({ activity, census, day, dominant, playing, onTogglePla
         aria-label="Day of the year"
         aria-valuemin={0}
         aria-valuemax={YEAR_DAYS - 1}
-        aria-valuenow={Math.floor(day)}
+        aria-valuenow={story.today}
         aria-valuetext={`${date} ${month}`}
         onPointerDown={(e) => {
           e.currentTarget.setPointerCapture(e.pointerId);

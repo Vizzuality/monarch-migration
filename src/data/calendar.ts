@@ -35,12 +35,6 @@ export interface Chapter {
   album?: Photo[];
 }
 
-export function chapterAt(chapters: Chapter[], day: number): Chapter {
-  let current = chapters[0];
-  for (const c of chapters) if (day >= c.from) current = c;
-  return current;
-}
-
 /** The day halfway through the chapter at `index`, where its Album sits. */
 export function chapterMiddle(chapters: Chapter[], index: number): number {
   const to = chapters[index + 1]?.from ?? YEAR_DAYS;

@@ -10,7 +10,9 @@ import mating from '../assets/photos/mating.jpg';
 import matingThumb from '../assets/photos/mating-thumb.jpg';
 import zinnia from '../assets/photos/zinnia.jpg';
 import zinniaThumb from '../assets/photos/zinnia-thumb.jpg';
-import type { Chapter } from '../data/calendar';
+import { dateOf, YEAR_DAYS, type Chapter } from '../data/calendar';
+import { GENERATIONS } from './generations';
+import type { Activity } from './types';
 
 export const CHAPTERS: Chapter[] = [
   {
@@ -123,3 +125,24 @@ export const CHAPTERS: Chapter[] = [
     body: 'They arrive around the Day of the Dead, in the same forest their great-great-grandmothers left. The cycle begins again.',
   },
 ];
+
+/** What the story shows on one day of the year. */
+export interface StoryDay {
+  /** The whole day of the year, from 0 to YEAR_DAYS - 1. */
+  today: number;
+  date: { date: number; month: string };
+  chapter: Chapter;
+  dominant: (typeof GENERATIONS)[number];
+}
+
+function chapterAt(today: number): Chapter {
+  let current = CHAPTERS[0];
+  for (const c of CHAPTERS) if (today >= c.from) current = c;
+  return current;
+}
+
+/** The story on `day`, which may be fractional or run past either end of the year. */
+export function storyAt(activity: Activity, day: number): StoryDay {
+  const today = ((Math.floor(day) % YEAR_DAYS) + YEAR_DAYS) % YEAR_DAYS;
+  return { today, date: dateOf(today), chapter: chapterAt(today), dominant: GENERATIONS[activity.dominant[today]] };
+}
