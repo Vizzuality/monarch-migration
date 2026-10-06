@@ -83,10 +83,8 @@ export function Timeline({ activity, census, day, story, playing, onTogglePlay, 
         onPointerMove={(e) => {
           if (e.currentTarget.hasPointerCapture(e.pointerId)) scrubTo(e.clientX);
         }}
-        onPointerUp={(e) => {
-          e.currentTarget.releasePointerCapture(e.pointerId);
-          onScrubEnd();
-        }}
+        // Not pointerup: a cancelled or stolen capture never sends one, and the story would stay paused.
+        onLostPointerCapture={onScrubEnd}
       >
         {!narrow && (
           <div className="cells" style={columns}>
