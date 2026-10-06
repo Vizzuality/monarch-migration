@@ -1,18 +1,15 @@
 import type { LngLat, Rng } from './random';
 
-export interface Trip {
-  /** The animal, or chain of animals, that flies or walks it. */
-  lineage: number;
-  /** Picks the trail color: a monarch generation, a Serengeti species. */
-  group: number;
+/** A timed path: where it is at each of its timestamps, from `start` to `end`. */
+export interface Route {
   path: LngLat[];
   timestamps: number[];
   start: number;
   end: number;
 }
 
-export interface TripBucket {
-  trips: Trip[];
+export interface Bucket<T extends Route> {
+  trips: T[];
   from: number;
   to: number;
 }
@@ -21,11 +18,11 @@ const BUCKET_DAYS = 10;
 
 // TripsLayer runs every vertex through the GPU each frame, even the ones outside
 // the trail window. Splitting trips by start date lets us hide whole buckets.
-export function bucketTrips(trips: Trip[]): TripBucket[] {
-  const buckets = new Map<number, TripBucket>();
+export function bucketTrips<T extends Route>(trips: T[]): Bucket<T>[] {
+  const buckets = new Map<number, Bucket<T>>();
   for (const trip of trips) {
     const key = Math.floor(trip.start / BUCKET_DAYS);
-    const bucket = buckets.get(key) ?? { trips: [], from: Infinity, to: -Infinity };
+    const bucket = buckets.get(key) ?? { trips: [] as T[], from: Infinity, to: -Infinity };
     bucket.trips.push(trip);
     bucket.from = Math.min(bucket.from, trip.start);
     bucket.to = Math.max(bucket.to, trip.end);
@@ -98,7 +95,7 @@ export function flight(rng: Rng, waypoints: LngLat[], start: number, end: number
   return { path, timestamps };
 }
 
-export function positionOnTrip(trip: Trip, t: number): LngLat {
+export function positionOnTrip(trip: Route, t: number): LngLat {
   const ts = trip.timestamps;
   let lo = 0;
   let hi = ts.length - 1;

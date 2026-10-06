@@ -1,8 +1,8 @@
 import { AnimatePresence, motion, type Variants } from 'motion/react';
 import { useRef } from 'react';
 
-import { dateOf, YEAR_DAYS } from '../data/calendar';
-import { GENERATIONS, type Generation } from '../monarch/generations';
+import { YEAR_DAYS } from '../data/calendar';
+import type { StoryDay } from '../monarch/story';
 
 const ROLL_S = 0.2;
 
@@ -45,10 +45,9 @@ function Slot({ value, roll: r }: { value: string; roll: Roll }) {
   );
 }
 
-export function DayReadout({ day, dominant }: { day: number; dominant: Generation }) {
-  const today = Math.floor(day);
+export function DayReadout({ story }: { story: StoryDay }) {
+  const { today, date: { date, month }, dominant } = story;
   const r = useRoll(today);
-  const { date, month } = dateOf(today);
   // Always two digits, so the month doesn't shift when the date reaches 10.
   const digits = String(date).padStart(2, '0').split('');
 
@@ -65,13 +64,13 @@ export function DayReadout({ day, dominant }: { day: number; dominant: Generatio
       <div className="readout-generation">
         <AnimatePresence mode="wait" initial={false}>
           <motion.p
-            key={dominant}
-            style={{ color: `rgb(${GENERATIONS[dominant].color})` }}
+            key={dominant.id}
+            style={{ color: `rgb(${dominant.color})` }}
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0, transition: { duration: 0.18, ease: 'easeOut' } }}
             exit={{ opacity: 0, y: -6, transition: { duration: 0.12, ease: 'easeIn' } }}
           >
-            {GENERATIONS[dominant].name}
+            {dominant.name}
           </motion.p>
         </AnimatePresence>
       </div>

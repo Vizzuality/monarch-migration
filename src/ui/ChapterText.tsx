@@ -1,8 +1,7 @@
 import { AnimatePresence, motion, type Variants } from 'motion/react';
 import { useRef } from 'react';
 
-import { chapterAt } from '../data/calendar';
-import { CHAPTERS } from '../monarch/story';
+import type { Chapter as ChapterContent } from '../data/calendar';
 import { ChapterButterflies } from './ChapterButterflies';
 
 const EASE_OUT = [0.2, 0.8, 0.2, 1] as const;
@@ -16,8 +15,7 @@ const line: Variants = {
   show: (delay: number) => ({ opacity: 1, y: 0, transition: { duration: 0.8, ease: EASE_OUT, delay } }),
 };
 
-export function ChapterText({ day }: { day: number }) {
-  const chapter = chapterAt(CHAPTERS, day);
+export function ChapterText({ chapter }: { chapter: ChapterContent }) {
   const anchor = useRef<HTMLDivElement>(null);
   return (
     // The butterflies sit outside the chapter so they stay on screen while it changes.

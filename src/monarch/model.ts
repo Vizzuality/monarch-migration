@@ -1,10 +1,10 @@
 import { YEAR_DAYS } from '../data/calendar';
 import { tint, type RGB } from '../data/color';
 import { around, gauss, inZone, mulberry32, unit, type LngLat, type Rng } from '../data/random';
-import { bucketTrips, flight, positionOnTrip, type Trip } from '../data/trips';
+import { bucketTrips, flight, positionOnTrip } from '../data/trips';
 import { GENERATIONS, metamorphosisColor, type Generation } from './generations';
 import { COLONIES, FLYWAY, ZONES } from './geo';
-import type { Activity, Frame, Ring, Simulation, SwarmMember } from './types';
+import type { Activity, Frame, Ring, Simulation, SwarmMember, SwarmState, Trip } from './types';
 
 /**
  * Synthetic migration model.
@@ -18,10 +18,16 @@ import type { Activity, Frame, Ring, Simulation, SwarmMember } from './types';
  */
 
 interface Lineage {
+  id: number;
   colony: number;
   home: LngLat;
   trips: Trip[];
   phase: number;
+}
+
+/** A butterfly of Generation `gen` in Lineage `id`: its Generation's color with the Lineage's own tint. */
+function butterflyColor(gen: Generation, id: number): RGB {
+  return tint(GENERATIONS[gen].color, id);
 }
 
 function pickColony(rng: Rng) {
@@ -72,21 +78,19 @@ function buildLineages(count: number, seed: number): { lineages: Lineage[]; trip
 
     const lineageTrips = legs.map((leg) => {
       const { path, timestamps } = flight(rng, leg.waypoints, leg.start, leg.end, leg.wander);
-      const trip: Trip = { lineage: id, group: leg.gen, path, timestamps, start: leg.start, end: leg.end };
+      const trip: Trip = { lineage: id, generation: leg.gen, color: butterflyColor(leg.gen, id), path, timestamps, start: leg.start, end: leg.end };
       trips.push(trip);
       return trip;
     });
 
-    lineages.push({ colony, home, trips: lineageTrips, phase: rng() * Math.PI * 2 });
+    lineages.push({ id, colony, home, trips: lineageTrips, phase: rng() * Math.PI * 2 });
   }
 
   return { lineages, trips };
 }
 
-type State =
-  | { kind: 'rest' }
-  | { kind: 'fly'; trip: Trip }
-  | { kind: 'egg'; at: LngLat; since: number; until: number; prevGen: Generation; nextGen: Generation };
+type EggState = { kind: 'egg'; at: LngLat; since: number; until: number; mother: Trip; next: Trip };
+type State = { kind: 'rest' } | { kind: 'fly'; trip: Trip } | EggState;
 
 function stateAt(lineage: Lineage, t: number): State {
   const { trips } = lineage;
@@ -100,8 +104,8 @@ function stateAt(lineage: Lineage, t: number): State {
         at: prev.path[prev.path.length - 1],
         since: prev.end,
         until: trip.start,
-        prevGen: prev.group as Generation,
-        nextGen: trip.group as Generation,
+        mother: prev,
+        next: trip,
       };
     }
     if (t < trip.end) return { kind: 'fly', trip };
@@ -109,11 +113,28 @@ function stateAt(lineage: Lineage, t: number): State {
   return { kind: 'rest' };
 }
 
-/** Fliers belong to their trip's Generation, eggs and caterpillars to their mother's, colonies to the Super generation. */
-function generationOf(s: State): Generation {
-  if (s.kind === 'fly') return s.trip.group as Generation;
-  if (s.kind === 'egg') return s.prevGen;
-  return 0;
+/** How far an egg is on its way to becoming a butterfly: 0 = just laid, 1 = about to hatch. */
+function stageOf(s: EggState, t: number) {
+  return (t - s.since) / (s.until - s.since);
+}
+
+interface Look {
+  state: SwarmState;
+  generation: Generation;
+  color: RGB;
+}
+
+/**
+ * How a Lineage's living member looks on day `t`, the same on the map and in the Swarm. Fliers belong to
+ * their trip's Generation, eggs and caterpillars already shift towards the Generation they become, and
+ * butterflies resting in the colonies belong to the Super generation.
+ */
+function lookOf(lineage: Lineage, s: State, t: number): Look {
+  if (s.kind === 'fly') return { state: 'flying', generation: s.trip.generation, color: s.trip.color };
+  if (s.kind === 'egg') {
+    return { state: 'developing', generation: s.next.generation, color: metamorphosisColor(stageOf(s, t), s.next.color) };
+  }
+  return { state: 'resting', generation: 0, color: butterflyColor(0, lineage.id) };
 }
 
 function computeActivity(lineages: Lineage[]): Activity {
@@ -123,8 +144,8 @@ function computeActivity(lineages: Lineage[]): Activity {
     const t = d + 0.5;
     const adults = GENERATIONS.map(() => 0);
     for (const lineage of lineages) {
-      const state = stateAt(lineage, t);
-      if (state.kind !== 'egg') adults[generationOf(state)]++;
+      const look = lookOf(lineage, stateAt(lineage, t), t);
+      if (look.state !== 'developing') adults[look.generation]++;
     }
     dominant.push(adults.indexOf(Math.max(...adults)) as Generation);
     butterflies.push(adults.map((c) => c / lineages.length));
@@ -173,47 +194,33 @@ function computeFrame(lineages: Lineage[], t: number, clock: number): Frame {
   };
   const rings: Ring[] = [];
 
-  lineages.forEach((lineage, i) => {
+  lineages.forEach((lineage) => {
+    const i = lineage.id;
     const s = stateAt(lineage, t);
-    let pos: LngLat;
-    let color: RGB;
-    let alpha: number;
-    let radius: number;
+    const { color } = lookOf(lineage, s, t);
 
     if (s.kind === 'fly') {
-      pos = positionOnTrip(s.trip, t);
-      color = GENERATIONS[s.trip.group].color;
-      alpha = 190;
-      radius = 2.2;
+      write(i, positionOnTrip(s.trip, t), color, 190, 2.2);
       const age = t - s.trip.start;
       if (age < RING_DAYS && s.trip !== lineage.trips[0]) {
-        rings.push({ position: s.trip.path[0], progress: age / RING_DAYS, color, size: RING_SIZE });
+        rings.push({ position: s.trip.path[0], progress: age / RING_DAYS, color: GENERATIONS[s.trip.generation].color, size: RING_SIZE });
       }
     } else if (s.kind === 'egg') {
       const age = t - s.since;
-      const stage = age / (s.until - s.since);
+      const stage = stageOf(s, t);
+      // Egg 0 is the Lineage's living member: it's the one that becomes the next Generation.
+      write(i, eggSpot(s.at, i, 0), color, 150, 1.3);
+      // Most eggs and caterpillars don't make it, but they're tinted like the butterfly they'd turn into too.
       const laid = Math.min(CLUTCH, Math.floor((age / LAYING_DAYS) * CLUTCH) + 1);
-      // Tinted like the butterfly it turns into, so the hatch has no color jump.
-      const adult = tint(GENERATIONS[s.nextGen].color, i);
-      for (let k = 0; k < laid; k++) {
-        // Most eggs and caterpillars don't make it; only egg 0 carries the lineage on.
-        const survival = k === 0 ? 1 : Math.max(0, 1 - stage / 0.9);
-        write(length++, eggSpot(s.at, i, k), metamorphosisColor(stage, adult), Math.round(150 * survival), 1.3);
+      for (let k = 1; k < laid; k++) {
+        write(length++, eggSpot(s.at, i, k), color, Math.round(150 * Math.max(0, 1 - stage / 0.9)), 1.3);
       }
       // The mother fades out where she landed as she lays: she dies after this.
-      pos = s.at;
-      color = GENERATIONS[s.prevGen].color;
-      alpha = Math.round(190 * Math.max(0, 1 - age / LAYING_DAYS));
-      radius = 2.2;
+      write(length++, s.at, s.mother.color, Math.round(190 * Math.max(0, 1 - age / LAYING_DAYS)), 2.2);
     } else {
       const w = clock * 2.3 + lineage.phase;
-      pos = [lineage.home[0] + Math.cos(w) * 0.012, lineage.home[1] + Math.sin(w * 1.37) * 0.009];
-      color = GENERATIONS[0].color;
-      alpha = 105;
-      radius = 1.5;
+      write(i, [lineage.home[0] + Math.cos(w) * 0.012, lineage.home[1] + Math.sin(w * 1.37) * 0.009], color, 105, 1.5);
     }
-
-    write(i, pos, tint(color, i), alpha, radius);
   });
 
   return { length, positions, colors, radii, rings };
@@ -234,21 +241,17 @@ function breedingGrounds(lineages: Lineage[], t: number) {
 // One Lineage in this many joins the Swarm.
 const SWARM_EVERY = 2;
 
-/** The sampled Lineages on day `t`, colored as the map draws them. Index `i` is the Lineage's id, which seeds its tint. */
-function census(sample: { lineage: Lineage; i: number }[], t: number): SwarmMember[] {
-  return sample.map(({ lineage, i }) => {
-    const s = stateAt(lineage, t);
-    if (s.kind === 'fly') return { color: tint(GENERATIONS[s.trip.group].color, i), state: 'flying' };
-    if (s.kind === 'egg') {
-      return { color: metamorphosisColor((t - s.since) / (s.until - s.since), tint(GENERATIONS[s.nextGen].color, i)), state: 'developing' };
-    }
-    return { color: tint(GENERATIONS[0].color, i), state: 'resting' };
+/** The sampled Lineages on day `t`, looking as the map draws them. */
+function census(sample: Lineage[], t: number): SwarmMember[] {
+  return sample.map((lineage) => {
+    const { state, color } = lookOf(lineage, stateAt(lineage, t), t);
+    return { lineage: lineage.id, color, state };
   });
 }
 
 export function buildModel(count = 800, seed = 1102): Simulation {
   const { lineages, trips } = buildLineages(count, seed);
-  const sample = lineages.map((lineage, i) => ({ lineage, i })).filter(({ i }) => i % SWARM_EVERY === 0);
+  const sample = lineages.filter(({ id }) => id % SWARM_EVERY === 0);
   return {
     buckets: bucketTrips(trips),
     activity: computeActivity(lineages),

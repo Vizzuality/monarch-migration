@@ -6,7 +6,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import './map/maplibre-worker';
 
 import logo from './assets/vizzuality.svg';
-import { chapterAt, YEAR_DAYS, type Chapter } from './data/calendar';
+import { YEAR_DAYS, type Chapter } from './data/calendar';
 import { MAP_STYLE } from './map/basemaps';
 import { cameraPath, framingBoost } from './map/camera';
 import { DeckOverlay } from './map/DeckOverlay';
@@ -15,7 +15,7 @@ import { pathTiles, pinTileZoom, tilesSettled } from './map/preload';
 import { stashTiles } from './map/tile-stash';
 import { buildModel } from './monarch/model';
 import { HOTSPOT_PAINT, KEYFRAMES, START_DAY } from './monarch/scene';
-import { CHAPTERS } from './monarch/story';
+import { CHAPTERS, storyAt } from './monarch/story';
 import { Albums, cardOnScreen, type CardOnScreen } from './ui/Albums';
 import { ChapterText } from './ui/ChapterText';
 import { DayReadout } from './ui/DayReadout';
@@ -78,6 +78,7 @@ function framing() {
 
 export default function App() {
   const [day, setDay] = useState(START_DAY);
+  const story = storyAt(sim.activity, day);
   const [clock, setClock] = useState(0);
   const [playing, setPlaying] = useState(true);
   // While loading, the camera walks the path instead of following `day`.
@@ -192,7 +193,7 @@ export default function App() {
     const from = cardOnScreen(chapter.album![0]);
     if (!from) return;
     // The card grows straight from where it sank, while the story jumps behind the blur.
-    if (chapterAt(CHAPTERS, day) !== chapter) setDay(chapter.from);
+    if (story.chapter !== chapter) setDay(chapter.from);
     setViewing({ chapter, index: 0, from });
     setAway(chapter.album![0].id);
   };
@@ -221,9 +222,7 @@ export default function App() {
   const camera = { ...shot, zoom: shot.zoom + zoomBoost };
 
   // MapLibre reparses GeoJSON on a worker, so refresh the hotspots once per day, not per frame.
-  const today = Math.floor(day);
-  const hotspots = useMemo(() => sim.hotspots(today + 0.5), [today]);
-  const dominant = sim.activity.dominant[today];
+  const hotspots = useMemo(() => sim.hotspots(story.today + 0.5), [story.today]);
 
   const frame = sim.frame(day, clock);
   // Nothing to see under the loader, so spare it the trails.
@@ -251,17 +250,17 @@ export default function App() {
       <div className="vignette" />
       <img className="logo" src={logo} width="107.484" height="24.0381" alt="Vizzuality" />
       <div className="story">
-        <ChapterText day={day} />
-        <DayReadout day={day} dominant={dominant} />
+        <ChapterText chapter={story.chapter} />
+        <DayReadout story={story} />
       </div>
       {/* A phone has no room for them yet. */}
       {!narrow && <Legend />}
-      {!narrow && <Albums chapters={CHAPTERS} active={chapterAt(CHAPTERS, day)} away={away} onOpen={openAlbum} />}
+      {!narrow && <Albums chapters={CHAPTERS} active={story.chapter} away={away} onOpen={openAlbum} />}
       <Timeline
         activity={sim.activity}
         census={sim.swarm}
         day={day}
-        dominant={dominant}
+        story={story}
         playing={playing}
         onTogglePlay={togglePlay}
         onScrub={setDay}

@@ -2,12 +2,9 @@ import type { Layer } from '@deck.gl/core';
 import { TripsLayer } from '@deck.gl/geo-layers';
 import { ScatterplotLayer, TextLayer } from '@deck.gl/layers';
 
-import { tint } from '../data/color';
-import type { Trip } from '../data/trips';
-import { GENERATIONS } from '../monarch/generations';
 import { PLACE_LABELS } from '../monarch/geo';
 import { CLOSE_UP } from '../monarch/scene';
-import type { Frame, Ring, Simulation } from '../monarch/types';
+import type { Frame, Ring, Simulation, Trip } from '../monarch/types';
 
 /**
  * Plain alpha blending: overlaps deepen toward the animals' own color
@@ -47,7 +44,7 @@ function tripLayers(sim: Simulation, day: number): Layer[] {
           visible: day >= bucket.from && day <= bucket.to + style.trailLength,
           getPath: (d) => d.path,
           getTimestamps: (d) => d.timestamps,
-          getColor: (d) => tint(GENERATIONS[d.group].color, d.lineage),
+          getColor: (d) => d.color,
           widthUnits: 'pixels',
           getWidth: style.width,
           capRounded: style.rounded,

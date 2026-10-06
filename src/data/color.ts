@@ -11,8 +11,8 @@ export function gradient(stops: { at: number; color: RGB }[], at: number): RGB {
 }
 
 /**
- * A stable per-individual variation of `color`, so a swarm or a herd reads as
- * many animals rather than one flat fill: a little darker or lighter, and a
+ * A stable per-individual variation of `color`, so a swarm reads as
+ * many butterflies rather than one flat fill: a little darker or lighter, and a
  * touch warmer or cooler.
  */
 export function tint(color: RGB, id: number): RGB {

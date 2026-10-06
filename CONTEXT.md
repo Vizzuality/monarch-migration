@@ -29,7 +29,7 @@ The full-screen view of one Album, one photo at a time with its title and descri
 _Avoid_: Modal, gallery, viewer
 
 **Lineage**:
-One chain of mothers and daughters followed across a whole migration year, from a colony in spring back to the same colony in autumn. Exactly one member of a Lineage is alive (as a butterfly, egg or caterpillar) on any given day.
+One chain of mothers and daughters followed across a whole migration year, from a colony in spring back to the same colony in autumn. Exactly one member of a Lineage is alive (as a butterfly, egg or caterpillar) on any given day. Its living member is what the map and the Swarm draw for it; the mother fading where she laid and the rest of her clutch are only scenery.
 _Avoid_: Individual, track
 
 **Swarm**:
