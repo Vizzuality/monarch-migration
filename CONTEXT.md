@@ -12,6 +12,10 @@ _Avoid_: Step, section, slide
 The photos that belong to a Chapter, pinned to the timeline halfway through it. While its Chapter is active the Album rises above the timeline at full contrast, with several photos fanned out as a loose stack of cards. The rest of the year it sinks behind the timeline, dimmed, with only its first photo peeking out. A Chapter may have no Album. Clicking any Album opens it in the Lightbox, after first moving the playhead into its Chapter if that Chapter wasn't active.
 _Avoid_: Gallery, step images, cards
 
+**Past**:
+The part of the timeline's bar and months behind the playhead right now. It looks switched off. Albums don't go Past; they follow their own Chapter. Scrubbing back brings days out of the Past again, and when the year loops back to 1 January nothing is Past.
+_Avoid_: Played, history, elapsed
+
 **Generation**:
 One of the four successive butterfly cohorts that make up a migration year, numbered by birth order after the Super generation.
 _Avoid_: Brood, wave

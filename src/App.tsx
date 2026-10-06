@@ -240,7 +240,9 @@ export default function App() {
         maxTileCacheZoomLevels={TILE_CACHE_SCREENS}
         onLoad={preload}
         attributionControl={false}
-        style={{ position: 'absolute', inset: 0 }}
+        // deck.gl draws into maplibre's control corner, which is lifted with a z-index; isolating the map keeps
+        // that lift inside it, so labels and trails stay under the timeline.
+        style={{ position: 'absolute', inset: 0, isolation: 'isolate' }}
       >
         <Source id="hotspots" type="geojson" data={hotspots}>
           <Layer id="hotspots-heatmap" type="heatmap" paint={HOTSPOT_PAINT} />

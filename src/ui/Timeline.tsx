@@ -1,7 +1,6 @@
-import { AnimatePresence, motion } from 'motion/react';
-import { useMemo, useRef } from 'react';
+import { motion, useReducedMotion } from 'motion/react';
+import { useMemo, useRef, type CSSProperties } from 'react';
 
-import playIcon from '../assets/play.svg';
 import { MONTH_LENGTHS, MONTHS, YEAR_DAYS } from '../data/calendar';
 import type { StoryDay } from '../monarch/story';
 import type { Activity, SwarmMember } from '../monarch/types';
@@ -21,11 +20,24 @@ interface Props {
   onScrubEnd: () => void;
 }
 
-function PauseIcon() {
+// The play triangle cut down the middle into two halves, each with the same four corners as a pause bar,
+// so one morphs into the other. The round stroke softens the corners.
+const PLAY = 'M6 4.3 L12.2 8.15 L12.2 15.85 L6 19.7 Z M12.2 8.15 L18.4 12 L18.4 12 L12.2 15.85 Z';
+const PAUSE = 'M6.6 4.8 L9 4.8 L9 19.2 L6.6 19.2 Z M15 4.8 L17.4 4.8 L17.4 19.2 L15 19.2 Z';
+
+function PlayPauseIcon({ playing }: { playing: boolean }) {
+  const reduced = useReducedMotion();
   return (
-    <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">
-      <rect x="4.5" y="3" width="4" height="14" rx="1.5" fill="#050507" />
-      <rect x="11.5" y="3" width="4" height="14" rx="1.5" fill="#050507" />
+    <svg className="play-icon" width="24" height="24" viewBox="0 0 24 24" aria-hidden="true">
+      <motion.path
+        initial={false}
+        animate={{ d: playing ? PAUSE : PLAY }}
+        transition={reduced ? { duration: 0 } : { type: 'spring', duration: 0.35, bounce: 0.25 }}
+        fill="currentColor"
+        stroke="currentColor"
+        strokeWidth={2.4}
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }
@@ -44,27 +56,19 @@ export function Timeline({ activity, census, day, story, playing, onTogglePlay, 
 
   const { date, month } = story.date;
   const color = `rgb(${story.dominant.color})`;
+  const fill = <div className="bar-fill" style={narrow ? { backgroundImage: bar.backgroundImage } : bar} />;
+  const columns = { gridTemplateColumns: MONTH_LENGTHS.map((l) => `${l}fr`).join(' ') };
 
   return (
     <div className="timeline">
       <button className="play" onClick={onTogglePlay} aria-label={playing ? 'Pause' : 'Play'}>
-        <AnimatePresence initial={false}>
-          <motion.span
-            key={playing ? 'pause' : 'play'}
-            className="play-icon"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
-          >
-            {playing ? <PauseIcon /> : <img src={playIcon} width="20" height="20" alt="" />}
-          </motion.span>
-        </AnimatePresence>
+        <PlayPauseIcon playing={playing} />
       </button>
 
       <div
         className="track"
         ref={trackRef}
+        style={{ '--past': `${(day / YEAR_DAYS) * 100}%` } as CSSProperties}
         role="slider"
         aria-label="Day of the year"
         aria-valuemin={0}
@@ -84,12 +88,21 @@ export function Timeline({ activity, census, day, story, playing, onTogglePlay, 
           onScrubEnd();
         }}
       >
-        <div className="bar">
-          <div className="bar-fill" style={narrow ? { backgroundImage: bar.backgroundImage } : bar} />
+        {!narrow && (
+          <div className="cells" style={columns}>
+            {MONTHS.map((m) => (
+              <span key={m} />
+            ))}
+          </div>
+        )}
+        {/* The Past is the same bar switched off, cut off where the playhead is. */}
+        <div className="bar">{fill}</div>
+        <div className="bar past" aria-hidden="true">
+          {fill}
         </div>
         {!narrow && (
           <>
-            <div className="months" style={{ gridTemplateColumns: MONTH_LENGTHS.map((l) => `${l}fr`).join(' ') }}>
+            <div className="months" style={columns}>
               {MONTHS.map((m) => (
                 <span key={m} className="month">
                   {m}
