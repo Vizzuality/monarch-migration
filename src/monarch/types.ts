@@ -22,9 +22,20 @@ export interface Ring {
   size: number;
 }
 
+/** A Colony as the map draws it on one day. */
+export interface ColonyGlow {
+  position: LngLat;
+  /** The share of the Colony's Lineages resting in it, counting the ones still melting in or already lifting off by how far along they are. */
+  share: number;
+  /** A slow swell around 1, so the Colony breathes. */
+  breath: number;
+  /** Full-strength diameter in meters. */
+  size: number;
+}
+
 /**
  * Everything the map draws on one day. The first slots hold each Lineage's living member, in id
- * order; the scenery around it (the rest of a clutch, a mother fading where she laid) follows.
+ * order; the scenery around it (the rest of a clutch, a mother fading where she laid, the glints over a Colony) follows.
  */
 export interface Frame {
   length: number;
@@ -32,6 +43,7 @@ export interface Frame {
   colors: Uint8Array;
   radii: Float32Array;
   rings: Ring[];
+  colonies: ColonyGlow[];
 }
 
 export interface Activity {

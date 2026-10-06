@@ -4,7 +4,7 @@ import { around, gauss, inZone, mulberry32, unit, type LngLat, type Rng } from '
 import { bucketTrips, flight, positionOnTrip } from '../data/trips';
 import { GENERATIONS, metamorphosisColor, type Generation } from './generations';
 import { COLONIES, FLYWAY, ZONES } from './geo';
-import type { Activity, Frame, Ring, Simulation, SwarmMember, SwarmState, Trip } from './types';
+import type { Activity, ColonyGlow, Frame, Ring, Simulation, SwarmMember, SwarmState, Trip } from './types';
 
 /**
  * Synthetic migration model.
@@ -170,6 +170,29 @@ function eggSpot(at: LngLat, i: number, k: number): LngLat {
   return [at[0] + Math.cos(angle) * r, at[1] + Math.sin(angle) * r * 0.75];
 }
 
+// A butterfly melts into its Colony over this long after landing, and comes back out of it over this long before take-off.
+const MELT_DAYS = 1;
+// The biggest Colony's glow at full strength. The others scale with how many butterflies they hold.
+const GLOW_SIZE = 110_000;
+const BREATH_SECONDS = 6;
+const BREATH = 0.08;
+// Pale wing spots catching the sun over the orange glow.
+const GLINT_COLOR: RGB = [255, 232, 196];
+
+/** How far a resting butterfly is part of its Colony: 0 just landed or about to take off, 1 fully melted in. */
+function meltOf(lineage: Lineage, t: number) {
+  const { trips } = lineage;
+  const sinceArrival = (t - trips[trips.length - 1].end + YEAR_DAYS) % YEAR_DAYS;
+  const untilDeparture = (trips[0].start - t + YEAR_DAYS) % YEAR_DAYS;
+  return Math.min(1, Math.min(sinceArrival, untilDeparture) / MELT_DAYS);
+}
+
+/** A brief flash every few seconds, at its own pace and moment for each Lineage. Never moves, only flickers. */
+function glint(lineage: Lineage, clock: number) {
+  const pace = 0.5 + unit(lineage.id * 3.71) * 0.7;
+  return Math.max(0, Math.sin(clock * pace + lineage.phase * 5)) ** 60;
+}
+
 /**
  * Every lineage's position at day `t`, followed by the eggs of lineages that
  * are between generations.
@@ -193,8 +216,11 @@ function computeFrame(lineages: Lineage[], t: number, clock: number): Frame {
     radii[j] = radius;
   };
   const rings: Ring[] = [];
+  const members = COLONIES.map(() => 0);
+  const resting = COLONIES.map(() => 0);
 
   lineages.forEach((lineage) => {
+    members[lineage.colony]++;
     const i = lineage.id;
     const s = stateAt(lineage, t);
     const { color } = lookOf(lineage, s, t);
@@ -218,12 +244,23 @@ function computeFrame(lineages: Lineage[], t: number, clock: number): Frame {
       // The mother fades out where she landed as she lays: she dies after this.
       write(length++, s.at, s.mother.color, Math.round(190 * Math.max(0, 1 - age / LAYING_DAYS)), 2.2);
     } else {
-      const w = clock * 2.3 + lineage.phase;
-      write(i, [lineage.home[0] + Math.cos(w) * 0.012, lineage.home[1] + Math.sin(w * 1.37) * 0.009], color, 105, 1.5);
+      // A resting butterfly is drawn as part of its Colony: the dot fades as it melts in, leaving only a glint.
+      const melt = meltOf(lineage, t);
+      write(i, lineage.home, color, Math.round(190 * (1 - melt)), 2.2);
+      write(length++, lineage.home, GLINT_COLOR, Math.round(210 * melt * glint(lineage, clock)), 1.1);
+      resting[lineage.colony] += melt;
     }
   });
 
-  return { length, positions, colors, radii, rings };
+  const biggest = Math.max(...COLONIES.map((c) => c.weight));
+  const colonies: ColonyGlow[] = COLONIES.map((colony, k) => ({
+    position: colony.position,
+    share: members[k] ? resting[k] / members[k] : 0,
+    breath: 1 + BREATH * Math.sin((clock / BREATH_SECONDS) * Math.PI * 2 + k * 1.9),
+    size: GLOW_SIZE * Math.sqrt(colony.weight / biggest),
+  }));
+
+  return { length, positions, colors, radii, rings, colonies };
 }
 
 /** Where eggs and caterpillars are on day `t`, one point per lineage between generations. */

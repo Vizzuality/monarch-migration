@@ -37,8 +37,12 @@ The full-screen view of one Album, one photo at a time with its title and descri
 _Avoid_: Modal, gallery, viewer
 
 **Lineage**:
-One chain of mothers and daughters followed across a whole migration year, from a colony in spring back to the same colony in autumn. Exactly one member of a Lineage is alive (as a butterfly, egg or caterpillar) on any given day. Its living member is what the map and the Swarm draw for it; the mother fading where she laid and the rest of her clutch are only scenery.
+One chain of mothers and daughters followed across a whole migration year, from a colony in spring back to the same colony in autumn. Exactly one member of a Lineage is alive (as a butterfly, egg or caterpillar) on any given day. Its living member is what the map and the Swarm draw for it, except that a butterfly resting in its Colony is drawn on the map as part of that Colony; the mother fading where she laid and the rest of her clutch are only scenery.
 _Avoid_: Individual, track
+
+**Colony**:
+One of the five oyamel forests in Mexico where the Super generation overwinters, and where each Lineage starts and ends its year. On the map it is a warm glow rather than separate butterflies, growing as arriving butterflies melt into it in autumn and draining as they emerge from it and take off in spring, so its strength always matches how many are resting there. Through the winter it breathes slowly, and tiny glints flicker on and off across it like wings opening in the sun; the glints never move.
+_Avoid_: Roost, cluster, overwintering site
 
 **Swarm**:
 The population streaming ahead of the playhead as a cloud of flying dots, one dot per Lineage in a fixed sample. Each dot takes off from the playhead in its Lineage's Generation color for that day, with eggs and caterpillars already shifting towards the Generation they become, and flies forward along the trail as it fades. Dots of butterflies in flight cover the whole trail and the rest only hop, so the trail stretches with the migration. Eggs and caterpillars are specks; butterflies vary in size. Not to be confused with the Flock, the drawn butterflies that perch around the chapter title.
