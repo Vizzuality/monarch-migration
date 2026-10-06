@@ -1,7 +1,6 @@
 import { AnimatePresence, motion } from 'motion/react';
-import { useMemo, useRef } from 'react';
+import { useMemo, useRef, type CSSProperties } from 'react';
 
-import playIcon from '../assets/play.svg';
 import { MONTH_LENGTHS, MONTHS, YEAR_DAYS } from '../data/calendar';
 import type { StoryDay } from '../monarch/story';
 import type { Activity, SwarmMember } from '../monarch/types';
@@ -21,11 +20,22 @@ interface Props {
   onScrubEnd: () => void;
 }
 
+function PlayIcon() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        d="M7.561 3.408a1.83 1.83 0 0 0-2.76 1.524v14.136a1.83 1.83 0 0 0 2.76 1.524l11.213-7.069a1.8 1.8 0 0 0 0-3.046L7.561 3.409Z"
+        fill="currentColor"
+      />
+    </svg>
+  );
+}
+
 function PauseIcon() {
   return (
-    <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">
-      <rect x="4.5" y="3" width="4" height="14" rx="1.5" fill="#050507" />
-      <rect x="11.5" y="3" width="4" height="14" rx="1.5" fill="#050507" />
+    <svg width="24" height="24" viewBox="0 0 20 20" aria-hidden="true">
+      <rect x="4.5" y="3" width="4" height="14" rx="1.5" fill="currentColor" />
+      <rect x="11.5" y="3" width="4" height="14" rx="1.5" fill="currentColor" />
     </svg>
   );
 }
@@ -44,6 +54,8 @@ export function Timeline({ activity, census, day, story, playing, onTogglePlay, 
 
   const { date, month } = story.date;
   const color = `rgb(${story.dominant.color})`;
+  const fill = <div className="bar-fill" style={narrow ? { backgroundImage: bar.backgroundImage } : bar} />;
+  const columns = { gridTemplateColumns: MONTH_LENGTHS.map((l) => `${l}fr`).join(' ') };
 
   return (
     <div className="timeline">
@@ -57,7 +69,7 @@ export function Timeline({ activity, census, day, story, playing, onTogglePlay, 
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
           >
-            {playing ? <PauseIcon /> : <img src={playIcon} width="20" height="20" alt="" />}
+            {playing ? <PauseIcon /> : <PlayIcon />}
           </motion.span>
         </AnimatePresence>
       </button>
@@ -65,6 +77,7 @@ export function Timeline({ activity, census, day, story, playing, onTogglePlay, 
       <div
         className="track"
         ref={trackRef}
+        style={{ '--past': `${(day / YEAR_DAYS) * 100}%` } as CSSProperties}
         role="slider"
         aria-label="Day of the year"
         aria-valuemin={0}
@@ -84,12 +97,21 @@ export function Timeline({ activity, census, day, story, playing, onTogglePlay, 
           onScrubEnd();
         }}
       >
-        <div className="bar">
-          <div className="bar-fill" style={narrow ? { backgroundImage: bar.backgroundImage } : bar} />
+        {!narrow && (
+          <div className="cells" style={columns}>
+            {MONTHS.map((m) => (
+              <span key={m} />
+            ))}
+          </div>
+        )}
+        {/* The Past is the same bar switched off, cut off where the playhead is. */}
+        <div className="bar">{fill}</div>
+        <div className="bar past" aria-hidden="true">
+          {fill}
         </div>
         {!narrow && (
           <>
-            <div className="months" style={{ gridTemplateColumns: MONTH_LENGTHS.map((l) => `${l}fr`).join(' ') }}>
+            <div className="months" style={columns}>
               {MONTHS.map((m) => (
                 <span key={m} className="month">
                   {m}

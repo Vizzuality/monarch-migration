@@ -29,8 +29,13 @@
   --display: 'ITC Garamond Narrow', Georgia, serif;
   --serif: 'ITC Garamond Condensed', Georgia, serif;
   --sans: Futura, 'Trebuchet MS', sans-serif;
-  --timeline-height: 86px;
+  /* Everything the timeline takes up from the bottom of the screen, the gap under its card included. */
+  --timeline-height: 95px;
+  --timeline-gap: 12px;
+  --play-size: 83px;
+  --play-gap: 5px;
   --bar-height: 17px;
+  --timeline-fill: #141b1e;
   /* How far an open Album reaches above the timeline: a raised card plus the highest, most turned one fanned out. */
   --album-height: 76px;
 }
@@ -347,8 +352,9 @@ p {
 
 .albums {
   position: absolute;
-  left: 50px;
-  right: 0;
+  /* Lined up with the inside of the timeline's card. */
+  left: calc(var(--timeline-gap) + var(--play-size) + var(--play-gap) + 1px);
+  right: calc(var(--timeline-gap) + 1px);
   bottom: var(--timeline-height);
 }
 
@@ -537,12 +543,12 @@ p {
 
 .timeline {
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: var(--timeline-height);
+  left: var(--timeline-gap);
+  right: var(--timeline-gap);
+  bottom: var(--timeline-gap);
+  height: calc(var(--timeline-height) - var(--timeline-gap));
   display: flex;
-  background: var(--timeline);
+  gap: var(--play-gap);
   user-select: none;
   -webkit-user-select: none;
 }
@@ -550,9 +556,15 @@ p {
 .play {
   position: relative;
   flex: none;
-  width: 50px;
-  border: none;
-  background: var(--cream);
+  width: var(--play-size);
+  /* The border is a gradient: painted under a see-through border, with the fill over it inside. */
+  border: 1px solid transparent;
+  border-radius: 16px;
+  background:
+    linear-gradient(var(--timeline-fill), var(--timeline-fill)) padding-box,
+    linear-gradient(#363e41, #1e282c) border-box;
+  box-shadow: 0 4px 4px rgba(0, 0, 0, 0.5);
+  color: var(--cream);
 }
 
 .play-icon {
@@ -565,8 +577,27 @@ p {
 .track {
   position: relative;
   flex: 1;
+  border: 1px solid transparent;
+  border-radius: 16px;
+  overflow: hidden;
+  background:
+    linear-gradient(177.56deg, #0b1215 3.31%, var(--timeline-fill) 45.46%) padding-box,
+    linear-gradient(178deg, #363e41 -10%, #1e282c 90%) border-box;
+  box-shadow: 0 4px 4px rgba(0, 0, 0, 0.5);
   cursor: ew-resize;
   touch-action: none;
+}
+
+/* One cell per month, divided below the bar so the bar itself runs on unbroken. */
+.cells {
+  position: absolute;
+  inset: 0;
+  display: grid;
+}
+
+.cells span + span {
+  margin-top: var(--bar-height);
+  border-left: 1px solid #1e282c;
 }
 
 .bar {
@@ -576,6 +607,13 @@ p {
   right: 0;
   height: var(--bar-height);
   background-color: var(--track);
+  clip-path: inset(0 0 0 var(--past));
+}
+
+/* Behind the playhead the bar is switched off, darkened rather than see-through, with a hard edge where it meets the rest. */
+.bar.past {
+  clip-path: inset(0 calc(100% - var(--past)) 0 0);
+  filter: grayscale(0.85) brightness(0.4);
 }
 
 /* Shrinks towards the middle of the bar, leaving the track behind it, while a Generation fades out. */
@@ -584,30 +622,30 @@ p {
   inset: 0;
 }
 
+/* The month names behind the playhead are switched off along with the bar, in a solid darker cream. */
 .months {
   position: absolute;
-  inset: 0;
+  inset: var(--bar-height) 0 0;
   display: grid;
+  background: linear-gradient(
+    to right,
+    color-mix(in srgb, var(--cream) 40%, var(--timeline-fill)) var(--past),
+    var(--cream) var(--past)
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
+/* Centered in its cell, under the bar. The trailing letter-spacing is given back so the word sits in the middle. */
 .month {
-  position: relative;
-  padding-top: calc(var(--bar-height) + 26px);
-  font-size: 18px;
+  display: grid;
+  place-items: center;
+  padding-left: 0.56px;
+  font-weight: 500;
+  font-size: 14px;
   line-height: 1.28;
-  letter-spacing: 0.72px;
-  text-align: center;
-}
-
-/* Cuts the bar into one cell per month. */
-.month + .month::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -1.4px;
-  width: 2.8px;
-  height: var(--bar-height);
-  background: var(--timeline);
+  letter-spacing: 0.56px;
 }
 
 /* Under the bar, clipped to the track so it cuts off at the ends of the year. */
@@ -627,14 +665,15 @@ p {
   height: 100%;
 }
 
-/* Only spans the dark strip under the bar, leaving the Dominant generation colors untouched. */
+/* Runs through the bar too, marking where the Past ends; the shadow keeps it apart from a bar of its own color. */
 .playhead {
   position: absolute;
-  top: var(--bar-height);
+  top: 0;
   bottom: 0;
   margin-left: -1px;
   width: 2px;
   background: currentColor;
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.25);
   pointer-events: none;
 }
 
@@ -643,18 +682,34 @@ p {
 @media (max-width: 768px) {
   :root {
     --timeline-height: 44px;
+    --timeline-gap: 0px;
+    --play-size: 44px;
+    --play-gap: 0px;
     --bar-height: 6px;
     /* There are no Albums to make room for. */
     --album-height: 0px;
   }
 
+  /* A bare strip flush with the bottom of the screen, rather than the card. */
+  .timeline {
+    background: var(--timeline);
+  }
+
   .play {
-    width: 44px;
+    border: none;
+    border-radius: 0;
+    background: var(--cream);
+    box-shadow: none;
+    color: var(--ink);
   }
 
   /* The whole strip still takes a finger, around a bar drawn thin across its middle. */
   .track {
     margin: 0 16px;
+    border: none;
+    border-radius: 0;
+    overflow: visible;
+    background: none;
   }
 
   .bar {
