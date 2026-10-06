@@ -3,9 +3,9 @@ import {
   motion,
   useIsPresent,
   useMotionTemplate,
-  useMotionValue,
   useReducedMotion,
   useSpring,
+  useTransform,
   type Transition,
 } from 'motion/react';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
@@ -33,6 +33,11 @@ const HINT_OFFSET = { x: 24, y: -43 };
 const TILT = 6;
 const TILT_PERSPECTIVE = 1000;
 const TILT_SPRING = { stiffness: 150, damping: 20 };
+// How far the photo slides inside its frame, as a share of its size, and how much it's zoomed to keep its edges hidden.
+const PARALLAX = 0.025;
+const PARALLAX_ZOOM = 1 + 2 * PARALLAX + 0.01;
+// How far the shadow falls away from the light, in pixels.
+const SHADOW_THROW = 28;
 
 function framed() {
   // The photo is clipped at the timeline, so on a short window it shrinks to stay clear of it.
@@ -74,28 +79,42 @@ export function Lightbox({ chapter, index, from, onIndex, onClose }: Props) {
   const [canTilt] = useState(() => !reduced && matchMedia('(hover: hover) and (pointer: fine)').matches);
   const [landed, setLanded] = useState(false);
   const tilting = canTilt && landed && present;
-  const rotateX = useSpring(0, TILT_SPRING);
-  const rotateY = useSpring(0, TILT_SPRING);
-  const glareX = useMotionValue(50);
-  const glareY = useMotionValue(50);
-  const glare = useSpring(0, TILT_SPRING);
-  const glareBackground = useMotionTemplate`radial-gradient(circle at ${glareX}% ${glareY}%, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0) 55%)`;
+  // Where the pointer is over the photo, from -1 to 1 each way, and how strongly the light catches it.
+  const across = useSpring(0, TILT_SPRING);
+  const down = useSpring(0, TILT_SPRING);
+  const shine = useSpring(0, TILT_SPRING);
+  // The side under the pointer is pressed in.
+  const rotateY = useTransform(across, (a) => a * TILT);
+  const rotateX = useTransform(down, (d) => -d * TILT);
+  // The photo sits a little behind the glass, so it slides against the lean.
+  const photoX = useTransform(across, (a) => `${-a * PARALLAX * 100}%`);
+  const photoY = useTransform(down, (d) => `${-d * PARALLAX * 100}%`);
+  // Zoomed only while it can slide, so it matches its card again by the time it shrinks into it.
+  const photoScale = useTransform(shine, [0, 1], [1, PARALLAX_ZOOM]);
+  const lightX = useTransform(across, (a) => (a + 1) * 50);
+  const lightY = useTransform(down, (d) => (d + 1) * 50);
+  const glareBackground = useMotionTemplate`radial-gradient(circle at ${lightX}% ${lightY}%, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0) 50%), linear-gradient(115deg, rgba(255, 255, 255, 0) 36%, rgba(255, 255, 255, 0.65) 47%, rgba(255, 255, 255, 0.15) 53%, rgba(255, 255, 255, 0) 64%) ${lightX}% ${lightY}% / 300% 300%`;
+  // A rim of light along the edges nearest the pointer.
+  const rim = useTransform(
+    [across, down, shine],
+    ([a, d, s]: number[]) => `inset ${-a * 4}px ${-d * 4}px 5px -2px rgba(255, 255, 255, ${0.55 * s})`,
+  );
+  const shadow = useTransform(
+    [across, down, shine],
+    ([a, d, s]: number[]) =>
+      `drop-shadow(${-a * SHADOW_THROW}px ${18 - d * SHADOW_THROW}px 40px rgba(0, 0, 0, ${0.75 * s}))`,
+  );
 
   const flatten = () => {
-    rotateX.set(0);
-    rotateY.set(0);
-    glare.set(0);
+    across.set(0);
+    down.set(0);
+    shine.set(0);
   };
 
   const lean = (x: number, y: number) => {
-    // From -1 to 1 across the photo. The side under the pointer is pressed in.
-    const across = ((x - frame.left) / frame.width) * 2 - 1;
-    const down = ((y - frame.top) / frame.height) * 2 - 1;
-    rotateY.set(across * TILT);
-    rotateX.set(-down * TILT);
-    glareX.set((across + 1) * 50);
-    glareY.set((down + 1) * 50);
-    glare.set(1);
+    across.set(((x - frame.left) / frame.width) * 2 - 1);
+    down.set(((y - frame.top) / frame.height) * 2 - 1);
+    shine.set(1);
   };
 
   // Closing drops the photo flat as it shrinks, so it lands on its card the way the card lies.
@@ -163,7 +182,7 @@ export function Lightbox({ chapter, index, from, onIndex, onClose }: Props) {
           animate="shown"
           exit="to"
           transition={MORPH}
-          style={{ rotateX, rotateY, transformPerspective: TILT_PERSPECTIVE }}
+          style={{ rotateX, rotateY, transformPerspective: TILT_PERSPECTIVE, filter: canTilt ? shadow : undefined }}
           onAnimationComplete={(definition) => definition === 'shown' && setLanded(true)}
           onClick={onClose}
           onPointerMove={(e) => {
@@ -181,13 +200,19 @@ export function Lightbox({ chapter, index, from, onIndex, onClose }: Props) {
               src={photo.src}
               alt={photo.alt}
               draggable={false}
+              style={{ x: photoX, y: photoY, scale: photoScale }}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.3 }}
             />
           </AnimatePresence>
-          {canTilt && <motion.div className="lightbox-glare" style={{ background: glareBackground, opacity: glare }} aria-hidden />}
+          {canTilt && (
+            <>
+              <motion.div className="lightbox-glare" style={{ background: glareBackground, opacity: shine }} aria-hidden />
+              <motion.div className="lightbox-rim" style={{ boxShadow: rim }} aria-hidden />
+            </>
+          )}
         </motion.div>
       </div>
 

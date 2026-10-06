@@ -478,6 +478,13 @@ p {
   pointer-events: none;
 }
 
+.lightbox-rim {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
 .lightbox-caption {
   position: absolute;
   width: 383px;
