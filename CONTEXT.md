@@ -4,6 +4,10 @@ An animated map story of the yearly monarch butterfly migration between the Mexi
 
 ## Language
 
+**Story title**:
+The name of the whole piece, "Flight of the Monarchs", shown above the Chapter title. It leaves and comes back with every Chapter, but it is the same for all of them and belongs to none.
+_Avoid_: Eyebrow, kicker, chapter subtitle
+
 **Chapter**:
 A titled passage of the story that is active from its start day of the year until the next one begins.
 _Avoid_: Step, section, slide

@@ -2,6 +2,7 @@ import { AnimatePresence, motion, type Variants } from 'motion/react';
 import { useRef } from 'react';
 
 import type { Chapter as ChapterContent } from '../data/calendar';
+import { STORY_TITLE } from '../monarch/story';
 import { ChapterButterflies } from './ChapterButterflies';
 
 const EASE_OUT = [0.2, 0.8, 0.2, 1] as const;
@@ -37,7 +38,11 @@ export function ChapterText({ chapter }: { chapter: ChapterContent }) {
 function Chapter({ title, body }: { title: string; body: string }) {
   return (
     <motion.div variants={block} initial="enter" animate="show" exit="leave">
-      <motion.h1 variants={line} custom={0}>
+      {/* Leaves and comes back with every chapter, since it sits one or two title lines higher. */}
+      <motion.p variants={line} custom={0} className="story-title">
+        {STORY_TITLE}
+      </motion.p>
+      <motion.h1 variants={line} custom={0.075}>
         {title}
       </motion.h1>
       <motion.p variants={line} custom={0.15}>

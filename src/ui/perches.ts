@@ -12,18 +12,9 @@ export interface Perch extends Spot {
   line: number;
 }
 
-// The forked tops of u, v, w, y and the slants of capitals leave nowhere level to stand.
-const LANDS = /[abcdehiklmnorstxzEFZ]/;
-// Discretionary ligatures are on, so these pairs are drawn as one glyph whose top the
-// canvas, which draws letters one at a time, can't see.
-const LIGATURES = /Th|f[filt]|[sc]t/g;
-// A letter on a lower line has the line above hanging right over it; only a descender
-// reaches down far enough to leave no room.
-const DESCENDS = /[gjpqy]/;
-
 /**
- * Where a butterfly can land on `title`: level spots on the top of the ink of each fitting
- * letter that has room above it. Points are relative to `frame`.
+ * Where a butterfly can land on `title`: level spots on the top of the ink of each letter
+ * that has room above it. Points are relative to `frame`.
  */
 export function measurePerches(title: HTMLElement, frame: HTMLElement): Perch[] {
   const text = title.firstChild;
@@ -39,25 +30,21 @@ export function measurePerches(title: HTMLElement, frame: HTMLElement): Perch[] 
 
   const origin = frame.getBoundingClientRect();
   const range = document.createRange();
-  const letters: { index: number; char: string; rect: DOMRect }[] = [];
+  const letters: { char: string; rect: DOMRect }[] = [];
   const value = text.data;
   for (let i = 0; i < value.length; i++) {
     if (!value[i].trim()) continue;
     range.setStart(text, i);
     range.setEnd(text, i + 1);
     const rect = range.getClientRects()[0];
-    if (rect) letters.push({ index: i, char: value[i], rect });
+    if (rect) letters.push({ char: value[i], rect });
   }
 
   const tops = [...new Set(letters.map((l) => Math.round(l.rect.top)))].sort((a, b) => a - b);
   const lineOf = (rect: DOMRect) => tops.indexOf(Math.round(rect.top));
 
-  const ligated = new Set<number>();
-  for (const m of value.matchAll(LIGATURES)) for (let i = 0; i < m[0].length; i++) ligated.add(m.index + i);
-
   const perches: Perch[] = [];
   letters.forEach((l) => {
-    if (!LANDS.test(l.char) || ligated.has(l.index)) return;
     const line = lineOf(l.rect);
     const top = inkTop(canvas, font, l.char, l.rect.width, ascent, descent);
     const level = top.flatMap((_, c) => (isLevel(top, c) ? [c] : []));
@@ -68,8 +55,10 @@ export function measurePerches(title: HTMLElement, frame: HTMLElement): Perch[] 
     const spots = last - first >= MIN_GAP ? [first, last] : [level[Math.floor(level.length / 2)]];
     for (const c of spots) perches.push({ line, x: l.rect.left - origin.left + c - PAD, y: l.rect.top - origin.top + top[c] });
   });
+  // The title is all capitals set nearly solid, so any letter on the line above leaves no
+  // room to stand under it.
   const hangsOver = (p: Perch) =>
-    letters.some((l) => lineOf(l.rect) === p.line - 1 && DESCENDS.test(l.char) && l.rect.left - origin.left <= p.x && l.rect.right - origin.left >= p.x);
+    letters.some((l) => lineOf(l.rect) === p.line - 1 && l.rect.left - origin.left <= p.x && l.rect.right - origin.left >= p.x);
   // Spots too close to their neighbour are dropped, so every one left can be taken at once.
   const spaced: Perch[] = [];
   for (const p of perches) if (!hangsOver(p) && isFree(p, spaced)) spaced.push(p);

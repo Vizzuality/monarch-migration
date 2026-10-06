@@ -14,6 +14,8 @@ import { dateOf, YEAR_DAYS, type Chapter } from '../data/calendar';
 import { GENERATIONS } from './generations';
 import type { Activity } from './types';
 
+export const STORY_TITLE = 'Flight of the Monarchs';
+
 export const CHAPTERS: Chapter[] = [
   {
     from: 0,
