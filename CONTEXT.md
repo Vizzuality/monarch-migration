@@ -41,9 +41,9 @@ One chain of mothers and daughters followed across a whole migration year, from 
 _Avoid_: Individual, track
 
 **Swarm**:
-The population streaming ahead of the playhead as a cloud of flying dots, one dot per Lineage in a fixed sample. Each dot takes off from the playhead in its Lineage's Generation color for that day, with eggs and caterpillars already shifting towards the Generation they become, and flies forward along the trail as it fades. Dots of butterflies in flight cover the whole trail and the rest only hop, so the trail stretches with the migration. Eggs and caterpillars are specks; butterflies vary in size. Not to be confused with the Flock, the drawn butterflies that perch around the chapter text and the legend.
+The population streaming ahead of the playhead as a cloud of flying dots, one dot per Lineage in a fixed sample. Each dot takes off from the playhead in its Lineage's Generation color for that day, with eggs and caterpillars already shifting towards the Generation they become, and flies forward along the trail as it fades. Dots of butterflies in flight cover the whole trail and the rest only hop, so the trail stretches with the migration. Eggs and caterpillars are specks; butterflies vary in size. Not to be confused with the Flock, the drawn butterflies that perch around the chapter title.
 _Avoid_: Particles, census, population sample
 
 **Flock**:
-The drawn monarchs that perch on the letters of the Chapter title and hop between them, and the smaller group that gathers around the legend. The title's Flock grows and shrinks with the title, both the butterflies and how far they flutter from it, down to a smallest size that still reads as a butterfly. Not to be confused with the Swarm, the dots streaming along the timeline.
+The drawn monarchs that perch on the letters of the Chapter title and hop between them. The Flock grows and shrinks with the title, both the butterflies and how far they flutter from it, down to a smallest size that still reads as a butterfly. The legend has no Flock. Not to be confused with the Swarm, the dots streaming along the timeline.
 _Avoid_: Birds, perched butterflies
