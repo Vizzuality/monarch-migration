@@ -33,7 +33,7 @@ The Generation with the most butterflies on a given day. Eggs and caterpillars d
 _Avoid_: Current generation, active generation
 
 **Lightbox**:
-The full-screen view of one Album, one photo at a time with its title and description, over the dimmed and blurred story. The story pauses while it is open.
+The full-screen view of one Album, one photo at a time with its title and description, over the dimmed and blurred story. The story pauses while it is open. The photo tilts slightly towards the pointer, catching a glare like a glossy print.
 _Avoid_: Modal, gallery, viewer
 
 **Lineage**:

@@ -470,6 +470,14 @@ p {
   object-fit: cover;
 }
 
+/* A glossy print catching the light where the pointer is. */
+.lightbox-glare {
+  position: absolute;
+  inset: 0;
+  mix-blend-mode: overlay;
+  pointer-events: none;
+}
+
 .lightbox-caption {
   position: absolute;
   width: 383px;

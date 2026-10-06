@@ -1,4 +1,13 @@
-import { AnimatePresence, motion, useReducedMotion, type Transition } from 'motion/react';
+import {
+  AnimatePresence,
+  motion,
+  useIsPresent,
+  useMotionTemplate,
+  useMotionValue,
+  useReducedMotion,
+  useSpring,
+  type Transition,
+} from 'motion/react';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 import arrow from '../assets/arrow.svg';
@@ -20,6 +29,10 @@ const CLEAR = { backgroundColor: 'rgba(5, 5, 7, 0)', backdropFilter: 'blur(0px)'
 const DIMMED = { backgroundColor: 'rgba(5, 5, 7, 0.55)', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)' };
 // The close hint sits up and to the right of the pointer.
 const HINT_OFFSET = { x: 24, y: -43 };
+// How far the photo leans towards the pointer, in degrees, and how deep it looks while doing it.
+const TILT = 6;
+const TILT_PERSPECTIVE = 1000;
+const TILT_SPRING = { stiffness: 150, damping: 20 };
 
 function framed() {
   // The photo is clipped at the timeline, so on a short window it shrinks to stay clear of it.
@@ -56,6 +69,39 @@ export function Lightbox({ chapter, index, from, onIndex, onClose }: Props) {
   const dialog = useRef<HTMLDialogElement>(null);
   const [frame, setFrame] = useState(framed);
   const [hint, setHint] = useState<{ x: number; y: number } | null>(null);
+  const present = useIsPresent();
+  // Only a mouse can lean the photo, and only once it has landed, so it never adds to the morph.
+  const [canTilt] = useState(() => !reduced && matchMedia('(hover: hover) and (pointer: fine)').matches);
+  const [landed, setLanded] = useState(false);
+  const tilting = canTilt && landed && present;
+  const rotateX = useSpring(0, TILT_SPRING);
+  const rotateY = useSpring(0, TILT_SPRING);
+  const glareX = useMotionValue(50);
+  const glareY = useMotionValue(50);
+  const glare = useSpring(0, TILT_SPRING);
+  const glareBackground = useMotionTemplate`radial-gradient(circle at ${glareX}% ${glareY}%, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0) 55%)`;
+
+  const flatten = () => {
+    rotateX.set(0);
+    rotateY.set(0);
+    glare.set(0);
+  };
+
+  const lean = (x: number, y: number) => {
+    // From -1 to 1 across the photo. The side under the pointer is pressed in.
+    const across = ((x - frame.left) / frame.width) * 2 - 1;
+    const down = ((y - frame.top) / frame.height) * 2 - 1;
+    rotateY.set(across * TILT);
+    rotateX.set(-down * TILT);
+    glareX.set((across + 1) * 50);
+    glareY.set((down + 1) * 50);
+    glare.set(1);
+  };
+
+  // Closing drops the photo flat as it shrinks, so it lands on its card the way the card lies.
+  useEffect(() => {
+    if (!present) flatten();
+  }, [present]);
 
   // Before the photo is measured, or it would grow inside a closed, invisible dialog.
   useLayoutEffect(() => {
@@ -117,9 +163,17 @@ export function Lightbox({ chapter, index, from, onIndex, onClose }: Props) {
           animate="shown"
           exit="to"
           transition={MORPH}
+          style={{ rotateX, rotateY, transformPerspective: TILT_PERSPECTIVE }}
+          onAnimationComplete={(definition) => definition === 'shown' && setLanded(true)}
           onClick={onClose}
-          onPointerMove={(e) => setHint({ x: e.clientX, y: e.clientY })}
-          onPointerLeave={() => setHint(null)}
+          onPointerMove={(e) => {
+            setHint({ x: e.clientX, y: e.clientY });
+            if (tilting) lean(e.clientX, e.clientY);
+          }}
+          onPointerLeave={() => {
+            setHint(null);
+            flatten();
+          }}
         >
           <AnimatePresence initial={false}>
             <motion.img
@@ -133,6 +187,7 @@ export function Lightbox({ chapter, index, from, onIndex, onClose }: Props) {
               transition={{ duration: 0.3 }}
             />
           </AnimatePresence>
+          {canTilt && <motion.div className="lightbox-glare" style={{ background: glareBackground, opacity: glare }} aria-hidden />}
         </motion.div>
       </div>
 
