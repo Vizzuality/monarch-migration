@@ -1,7 +1,7 @@
 @font-face {
-  font-family: 'ITC Garamond Narrow';
-  src: url('./assets/fonts/itc-garamond-bold-narrow.woff2') format('woff2');
-  font-weight: 700;
+  font-family: 'Musetta';
+  src: url('./assets/fonts/musetta-regular.woff2') format('woff2');
+  font-weight: 400;
   font-display: swap;
 }
 
@@ -26,7 +26,7 @@
   --timeline: #111719;
   --track: rgba(50, 69, 72, 0.34);
   --card: rgba(18, 29, 31, 0.4);
-  --display: 'ITC Garamond Narrow', Georgia, serif;
+  --display: Musetta, Georgia, serif;
   --serif: 'ITC Garamond Condensed', Georgia, serif;
   --sans: Futura, 'Trebuchet MS', sans-serif;
   /* Everything the timeline takes up from the bottom of the screen, the gap under its card included. */
@@ -146,12 +146,20 @@ p {
 /* Chapter */
 
 /* The title follows the narrower of the viewport's width and height, reaching its full
-   size at 1920x1080, so it is already smaller on a laptop. The column and body text keep
-   their proportions to it. */
+   size at 1728x1117. The column, the body text and the story title above it keep their
+   proportions to it. */
 .chapter {
-  --title-size: clamp(52px, min(6.28vw, 11.17vh), 120.552px);
+  --title-size: clamp(52px, min(7.18vw, 11.1vh), 124px);
   position: relative;
-  width: min(calc(var(--title-size) * 4.645), 100vw - 32px);
+  width: min(calc(var(--title-size) * 4.78), 100vw - 32px);
+}
+
+.story-title {
+  margin-bottom: calc(var(--title-size) * 0.33);
+  font-size: 14px;
+  line-height: 1.28;
+  letter-spacing: 0.56px;
+  text-transform: uppercase;
 }
 
 .chapter-anchor {
@@ -165,20 +173,21 @@ p {
 
 .chapter h1 {
   font-family: var(--display);
-  font-weight: 700;
+  font-weight: 400;
   font-size: var(--title-size);
-  line-height: 0.82;
-  font-feature-settings: 'dlig' 1;
+  line-height: 0.774;
+  letter-spacing: -0.03em;
+  text-wrap: balance;
 }
 
-.chapter p {
-  margin-top: calc(var(--title-size) * 0.257);
-  max-width: calc(var(--title-size) * 3.84);
+.chapter h1 + p {
+  margin-top: calc(var(--title-size) * 0.21);
+  max-width: calc(var(--title-size) * 3.47);
   font-family: var(--serif);
   font-weight: 300;
-  font-size: max(18px, var(--title-size) * 0.249);
+  font-size: max(18px, var(--title-size) * 0.274);
   line-height: 1.17;
-  letter-spacing: 1.2px;
+  letter-spacing: 0.02em;
 }
 
 /* Butterflies: the model the flock canvases take their pictures from */
@@ -205,7 +214,7 @@ p {
 .readout {
   display: flex;
   flex-direction: column;
-  gap: 9px;
+  gap: 16px;
 }
 
 .readout-date {
@@ -213,7 +222,6 @@ p {
   line-height: 1.28;
   letter-spacing: 0.56px;
   text-transform: uppercase;
-  color: #fff;
   font-variant-numeric: tabular-nums;
 }
 
@@ -232,12 +240,12 @@ p {
 }
 
 .readout-generation {
-  font-family: var(--display);
-  font-weight: 700;
-  font-size: 24px;
-  line-height: 32px;
+  font-family: var(--serif);
+  font-weight: 300;
+  font-size: 34px;
+  line-height: 1.17;
+  letter-spacing: 0.02em;
   height: 1lh;
-  font-feature-settings: 'dlig' 1;
 }
 
 /* Legend */
@@ -498,10 +506,10 @@ p {
 
 .lightbox-caption h2 {
   font-family: var(--display);
-  font-weight: 700;
+  font-weight: 400;
   font-size: clamp(36px, 3.36vw, 58px);
-  line-height: 0.63;
-  font-feature-settings: 'dlig' 1;
+  line-height: 0.774;
+  letter-spacing: -0.03em;
 }
 
 .lightbox-caption p {
@@ -747,6 +755,11 @@ p {
   .playhead {
     top: 12px;
     bottom: 12px;
+  }
+
+  /* At full size it would stand almost as tall as the title, which is at its smallest here. */
+  .readout-generation {
+    font-size: 24px;
   }
 }
 

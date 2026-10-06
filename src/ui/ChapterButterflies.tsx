@@ -6,7 +6,9 @@ import { Flock, type Roost } from './Flock';
 import { CanvasButterfly, FlockCanvas } from './FlockCanvas';
 import { isFree, measureTitle, type Perch, type Point } from './perches';
 
-const FLOCK = 8;
+// Short titles like "The relay" have only six to eight spots, and a butterfly can only hop
+// to a free one.
+const FLOCK = 6;
 // The title size the butterflies' sizes and flights were tuned on, at 1440x900.
 const TUNED_ON = 90;
 // Below this the smallest butterfly would be under 6px, too small to tell its wings apart.
@@ -33,7 +35,7 @@ function hoverPoint(from: Point, perches: Perch[], width: number, scale: number,
 }
 
 /**
- * Eight monarchs that land on the chapter title and hop between its letters. When the
+ * Six monarchs that land on the chapter title and hop between its letters. When the
  * chapter changes each flies straight from its letter to one on the new title.
  */
 export function ChapterButterflies({ title, body, anchorRef }: { title: string; body: string; anchorRef: RefObject<HTMLElement | null> }) {
