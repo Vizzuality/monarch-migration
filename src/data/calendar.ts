@@ -28,11 +28,24 @@ export interface Photo {
   credit: string;
 }
 
+export interface Album {
+  from: number;
+  photos: Photo[];
+}
+
 export interface Chapter {
   from: number;
   title: string;
   body: string;
   album?: Photo[];
+  albums?: Album[];
+  albumFrom?: number;
+}
+
+export function chapterAlbums(chapter: Chapter): Album[] {
+  if (chapter.albums?.length) return chapter.albums;
+  if (chapter.album?.length) return [{ from: chapter.albumFrom ?? chapter.from, photos: chapter.album }];
+  return [];
 }
 
 /** The day halfway through the chapter at `index`, where its Album sits. */
