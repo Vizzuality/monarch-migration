@@ -66,7 +66,7 @@ export const CHAPTERS: Chapter[] = [
   {
     from: 115,
     title: 'The relay',
-    body: 'Living just a few weeks, the daughters carry the wave into the Midwest where they birth the granddaughters.',
+    body: 'The daughters live just a few weeks, long enough to carry the wave into the Midwest where the granddaughters hatch.',
     album: [
       {
         id: 'emerging',
@@ -82,7 +82,7 @@ export const CHAPTERS: Chapter[] = [
   {
     from: 170,
     title: 'Reaching the lakes',
-    body: 'Their granddaughters reach the Great Lakes, southern Canada and New England.',
+    body: 'The granddaughters reach the Great Lakes, southern Canada and New England.',
     album: [
       {
         id: 'zinnia',
