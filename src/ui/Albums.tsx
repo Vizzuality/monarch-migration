@@ -1,6 +1,6 @@
 import { motion, type Transition, type Variants } from 'motion/react';
 
-import { chapterAlbums, YEAR_DAYS, type Chapter, type Photo } from '../data/calendar';
+import { chapterMiddle, YEAR_DAYS, type Chapter, type Photo } from '../data/calendar';
 import { mulberry32 } from '../data/random';
 
 export const CARD_SIZE = 65;
@@ -46,7 +46,7 @@ export function cardOnScreen(photo: Photo) {
 
 export type CardOnScreen = NonNullable<ReturnType<typeof cardOnScreen>>;
 
-const albumVariant: Variants = {
+const album: Variants = {
   // Sunk behind the timeline with only the top of the first photo showing.
   rest: { y: 29, transition: RISE },
   // Still tucked a little into the timeline, so the active Album lifts rather than leaps.
@@ -58,45 +58,41 @@ interface Props {
   active: Chapter;
   /** The photo out in the Lightbox, whose card stays empty until it comes back. */
   away: string | null;
-  onOpen: (chapter: Chapter, albumIndex: number) => void;
+  onOpen: (chapter: Chapter) => void;
 }
 
 export function Albums({ chapters, active, away, onOpen }: Props) {
   return (
     <div className="albums">
-      {chapters.flatMap((chapter) => {
-        const groups = chapterAlbums(chapter);
-        if (!groups.length) return [];
-
-        return groups.map((album, albumIndex) => {
-          const isActive = chapter === active;
-          const awayAt = album.photos.findIndex((p) => p.id === away);
-          return (
-            <motion.button
-              key={`${chapter.title}-${albumIndex}`}
-              className={`album${isActive ? ' active' : ''}`}
-              style={{ left: `${((album.from ?? chapter.from) / YEAR_DAYS) * 100}%` }}
-              data-album={chapter.title}
-              aria-label={`Open photos: ${chapter.title}`}
-              variants={albumVariant}
-              initial={false}
-              animate={isActive ? 'active' : 'rest'}
-              onClick={() => onOpen(chapter, albumIndex)}
-            >
-              {album.photos.map((photo, index) => (
-                <Card
-                  key={photo.id}
-                  photo={photo}
-                  index={index}
-                  count={album.photos.length}
-                  under={sunkTilt(album.photos[0])}
-                  away={index === awayAt}
-                  covering={index < awayAt}
-                />
-              ))}
-            </motion.button>
-          );
-        });
+      {chapters.map((chapter, i) => {
+        if (!chapter.album?.length) return null;
+        const isActive = chapter === active;
+        const awayAt = chapter.album.findIndex((p) => p.id === away);
+        return (
+          <motion.button
+            key={chapter.title}
+            className={`album${isActive ? ' active' : ''}`}
+            style={{ left: `${(chapterMiddle(chapters, i) / YEAR_DAYS) * 100}%` }}
+            data-album={chapter.title}
+            aria-label={`Open photos: ${chapter.title}`}
+            variants={album}
+            initial={false}
+            animate={isActive ? 'active' : 'rest'}
+            onClick={() => onOpen(chapter)}
+          >
+            {chapter.album.map((photo, index) => (
+              <Card
+                key={photo.id}
+                photo={photo}
+                index={index}
+                count={chapter.album!.length}
+                under={sunkTilt(chapter.album![0])}
+                away={index === awayAt}
+                covering={index < awayAt}
+              />
+            ))}
+          </motion.button>
+        );
       })}
     </div>
   );

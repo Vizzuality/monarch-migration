@@ -6,7 +6,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import './map/maplibre-worker';
 
 import logo from './assets/vizzuality.svg';
-import { chapterAlbums, YEAR_DAYS, type Chapter } from './data/calendar';
+import { YEAR_DAYS, type Chapter } from './data/calendar';
 import { MAP_STYLE } from './map/basemaps';
 import { cameraPath, framingBoost } from './map/camera';
 import { DeckOverlay } from './map/DeckOverlay';
@@ -44,7 +44,7 @@ const TILE_CACHE_SCREENS = 64;
 const DOWNLOAD_SHARE = 0.85;
 const PRELOAD_PARALLEL_IMAGES = 256;
 
-const PHOTOS = CHAPTERS.flatMap((chapter) => chapterAlbums(chapter).flatMap((album) => album.photos)).flatMap((photo) => [photo.thumb, photo.src]);
+const PHOTOS = CHAPTERS.flatMap((c) => c.album ?? []).flatMap((p) => [p.thumb, p.src]);
 // Holding on to them keeps them decoded, so a card never grows into the Lightbox half drawn.
 const decoded: HTMLImageElement[] = [];
 
@@ -64,7 +64,6 @@ async function loadPhotos(onProgress: (done: number) => void) {
 
 interface Viewing {
   chapter: Chapter;
-  albumIndex: number;
   index: number;
   from: CardOnScreen;
 }
@@ -192,36 +191,31 @@ export default function App() {
     setLoading(false);
   }, []);
 
-  const openAlbum = (chapter: Chapter, albumIndex = 0) => {
-    const album = chapterAlbums(chapter)[albumIndex] ?? chapterAlbums(chapter)[0];
-    if (!album) return;
-    const from = cardOnScreen(album.photos[0]);
+  const openAlbum = (chapter: Chapter) => {
+    const from = cardOnScreen(chapter.album![0]);
     if (!from) return;
     // The card grows straight from where it sank, while the story jumps behind the blur.
     if (story.chapter !== chapter) setDay(chapter.from);
-    setViewing({ chapter, albumIndex, index: 0, from });
-    setAway(album.photos[0].id);
+    setViewing({ chapter, index: 0, from });
+    setAway(chapter.album![0].id);
   };
 
   const showPhoto = (index: number) => {
     if (!viewing) return;
-    const album = chapterAlbums(viewing.chapter)[viewing.albumIndex] ?? { photos: [] };
-    if (!album.photos[index]) return;
     setViewing({ ...viewing, index });
-    setAway(album.photos[index].id);
+    setAway(viewing.chapter.album![index].id);
   };
 
   const closeLightbox = () => {
     if (!viewing) return;
-    const album = chapterAlbums(viewing.chapter)[viewing.albumIndex] ?? { photos: [] };
-    setReturnTo(cardOnScreen(album.photos[viewing.index]));
+    setReturnTo(cardOnScreen(viewing.chapter.album![viewing.index]));
     setViewing(null);
   };
 
   const lightboxClosed = () => {
     const photo = away;
     setAway(null);
-    const chapter = CHAPTERS.find((c) => chapterAlbums(c).some((album) => album.photos.some((p) => p.id === photo)));
+    const chapter = CHAPTERS.find((c) => c.album?.some((p) => p.id === photo));
     // The dialog is still in the DOM, keeping the page inert, until the frame after its exit.
     if (chapter) requestAnimationFrame(() => document.querySelector<HTMLElement>(`[data-album="${chapter.title}"]`)?.focus());
   };
@@ -282,7 +276,6 @@ export default function App() {
           <Lightbox
             key="lightbox"
             chapter={viewing.chapter}
-            albumIndex={viewing.albumIndex}
             index={viewing.index}
             from={viewing.from}
             onIndex={showPhoto}

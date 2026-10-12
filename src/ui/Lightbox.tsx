@@ -11,7 +11,7 @@ import {
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 import arrow from '../assets/arrow.svg';
-import { chapterAlbums, type Chapter } from '../data/calendar';
+import type { Chapter } from '../data/calendar';
 import type { CardOnScreen } from './Albums';
 
 const MORPH: Transition = { type: 'spring', stiffness: 220, damping: 30 };
@@ -60,7 +60,6 @@ const onCard = ({ x, y, size, rotate }: CardOnScreen) => ({
 
 interface Props {
   chapter: Chapter;
-  albumIndex: number;
   index: number;
   /** The card the photo grows out of. The one it shrinks back into comes through AnimatePresence's `custom`. */
   from: CardOnScreen;
@@ -68,8 +67,8 @@ interface Props {
   onClose: () => void;
 }
 
-export function Lightbox({ chapter, albumIndex, index, from, onIndex, onClose }: Props) {
-  const photos = chapterAlbums(chapter)[albumIndex]?.photos ?? chapter.album ?? [];
+export function Lightbox({ chapter, index, from, onIndex, onClose }: Props) {
+  const photos = chapter.album!;
   const photo = photos[index];
   const reduced = useReducedMotion();
   const dialog = useRef<HTMLDialogElement>(null);

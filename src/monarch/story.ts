@@ -67,34 +67,15 @@ export const CHAPTERS: Chapter[] = [
     from: 115,
     title: 'The relay',
     body: 'Living just a few weeks, the daughters carry the wave into the Midwest where they birth the granddaughters.',
-    albums: [
+    album: [
       {
-        from: 120,
-        photos: [
-          {
-            id: 'emerging',
-            src: emerging,
-            thumb: emergingThumb,
-            title: 'A new butterfly',
-            description: 'After ten days inside, the adult splits open the chrysalis and hangs while its wings dry.',
-            alt: 'A monarch hanging from its empty chrysalis just after emerging.',
-            credit: 'Blackkeli on Pixabay',
-          },
-        ],
-      },
-      {
-        from: 151,
-        photos: [
-          {
-            id: 'black-eyed-susans',
-            src: blackEyedSusans,
-            thumb: blackEyedSusansThumb,
-            title: 'Summer butterflies',
-            description: 'Summer butterflies live only a few weeks, long enough to mate and leave eggs on the next patch of milkweed.',
-            alt: 'Two monarchs resting on black-eyed Susans.',
-            credit: 'StillWorld on Pixabay',
-          },
-        ],
+        id: 'emerging',
+        src: emerging,
+        thumb: emergingThumb,
+        title: 'A new butterfly',
+        description: 'After ten days inside, the adult splits open the chrysalis and hangs while its wings dry.',
+        alt: 'A monarch hanging from its empty chrysalis just after emerging.',
+        credit: 'Blackkeli on Pixabay',
       },
     ],
   },
@@ -117,9 +98,18 @@ export const CHAPTERS: Chapter[] = [
   {
     from: 215,
     title: 'Northern summer',
-    
     body: 'The great-granddaughters spread out across the north and lay the eggs of the next super generation.',
-   
+    album: [
+      {
+        id: 'black-eyed-susans',
+        src: blackEyedSusans,
+        thumb: blackEyedSusansThumb,
+        title: 'Short lives',
+        description: 'Summer butterflies live only a few weeks, long enough to mate and leave eggs on the next patch of milkweed.',
+        alt: 'Two monarchs resting on black-eyed Susans.',
+        credit: 'StillWorld on Pixabay',
+      },
+    ],
   },
   {
     from: 250,
