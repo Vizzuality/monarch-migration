@@ -25,7 +25,7 @@ export const CHAPTERS: Chapter[] = [
   {
     from: 55,
     title: 'The awakening',
-    body: 'As the days grow longer, the super generation mates and sets off north in search of milkweed.',
+    body: 'As the days grow longer, the butterflies finally mate and set off north in search of milkweed.',
     album: [
       {
         id: 'mating',
@@ -48,7 +48,7 @@ export const CHAPTERS: Chapter[] = [
         src: caterpillarStem,
         thumb: caterpillarStemThumb,
         title: 'Milkweed only',
-        description: 'A monarch caterpillar eats nothing but milkweed, and the plant leaves it bitter to birds for life.',
+        description: 'A monarch caterpillar eats nothing but milkweed, which makes it taste bitter to birds.',
         alt: 'A striped monarch caterpillar climbing a milkweed stem.',
         credit: 'lookalikejlee on Pixabay',
       },
@@ -66,14 +66,14 @@ export const CHAPTERS: Chapter[] = [
   {
     from: 115,
     title: 'The relay',
-    body: 'Living just a few weeks, they push the wave on into the Midwest.',
+    body: 'The daughters live just a few weeks, long enough to carry the wave into the Midwest where the granddaughters hatch.',
     album: [
       {
         id: 'emerging',
         src: emerging,
         thumb: emergingThumb,
         title: 'A new butterfly',
-        description: 'After ten days or so in the chrysalis, the adult splits it open and hangs while its wings dry.',
+        description: 'After ten days inside, the adult splits open the chrysalis and hangs while its wings dry.',
         alt: 'A monarch hanging from its empty chrysalis just after emerging.',
         credit: 'Blackkeli on Pixabay',
       },
@@ -82,7 +82,7 @@ export const CHAPTERS: Chapter[] = [
   {
     from: 170,
     title: 'Reaching the lakes',
-    body: 'Their granddaughters reach the Great Lakes, southern Canada and New England.',
+    body: 'The granddaughters reach the Great Lakes, southern Canada and New England.',
     album: [
       {
         id: 'zinnia',
@@ -104,7 +104,7 @@ export const CHAPTERS: Chapter[] = [
         id: 'black-eyed-susans',
         src: blackEyedSusans,
         thumb: blackEyedSusansThumb,
-        title: 'Summer in the north',
+        title: 'Short lives',
         description: 'Summer butterflies live only a few weeks, long enough to mate and leave eggs on the next patch of milkweed.',
         alt: 'Two monarchs resting on black-eyed Susans.',
         credit: 'StillWorld on Pixabay',
@@ -114,7 +114,7 @@ export const CHAPTERS: Chapter[] = [
   {
     from: 250,
     title: 'The super generation',
-    body: 'Born sexually immature, they live eight months and head southwest. None of them has ever been to Mexico.',
+    body: 'This remarkable generation lives 8 times longer. Instead of breeding, they save their strength for a long journey. None of them has ever been to Mexico.',
   },
   {
     from: 290,
