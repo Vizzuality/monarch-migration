@@ -6,7 +6,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import './map/maplibre-worker';
 
 import logo from './assets/vizzuality.svg';
-import { YEAR_DAYS, type Chapter } from './data/calendar';
+import { albumAfter, stacked, YEAR_DAYS, type Chapter } from './data/calendar';
 import { MAP_STYLE } from './map/basemaps';
 import { cameraPath, framingBoost } from './map/camera';
 import { DeckOverlay } from './map/DeckOverlay';
@@ -16,11 +16,11 @@ import { stashTiles } from './map/tile-stash';
 import { buildModel } from './monarch/model';
 import { HOTSPOT_PAINT, KEYFRAMES, START_DAY } from './monarch/scene';
 import { CHAPTERS, storyAt } from './monarch/story';
-import { Albums, cardOnScreen, type CardOnScreen } from './ui/Albums';
+import { Albums, cardsAt, cardsOnScreen, type CardOnScreen } from './ui/Albums';
 import { ChapterText } from './ui/ChapterText';
 import { DayReadout } from './ui/DayReadout';
 import { Legend } from './ui/Legend';
-import { Lightbox } from './ui/Lightbox';
+import { Lightbox, type Returns } from './ui/Lightbox';
 import { Loader } from './ui/Loader';
 import { isNarrow, useNarrow } from './ui/narrow';
 import { Timeline } from './ui/Timeline';
@@ -65,7 +65,7 @@ async function loadPhotos(onProgress: (done: number) => void) {
 interface Viewing {
   chapter: Chapter;
   index: number;
-  from: CardOnScreen;
+  from: Record<string, CardOnScreen>;
 }
 
 const sim = buildModel();
@@ -90,9 +90,11 @@ export default function App() {
   const [{ padding, zoomBoost }, setFraming] = useState(framing);
   const narrow = useNarrow();
   const [viewing, setViewing] = useState<Viewing | null>(null);
-  // Where the photo shrinks back to as the Lightbox closes, and whose card stays empty until it lands.
-  const [returnTo, setReturnTo] = useState<CardOnScreen | null>(null);
-  const [away, setAway] = useState<string | null>(null);
+  // Only for this visit: a reload puts every Album's first photo back on top.
+  const [covers, setCovers] = useState<Record<string, string>>({});
+  const [away, setAway] = useState<string[]>([]);
+  const returns: Returns = useRef({});
+  const lastAlbum = useRef<Chapter | null>(null);
 
   const playingRef = useRef(playing);
   const scrubbingRef = useRef(false);
@@ -192,30 +194,47 @@ export default function App() {
   }, []);
 
   const openAlbum = (chapter: Chapter) => {
-    const from = cardOnScreen(chapter.album![0]);
+    const from = cardsOnScreen(chapter);
     if (!from) return;
-    // The card grows straight from where it sank, while the story jumps behind the blur.
+    // The cards fly straight from where they sank, while the story jumps behind the blur.
     if (story.chapter !== chapter) setDay(chapter.from);
-    setViewing({ chapter, index: 0, from });
-    setAway(chapter.album![0].id);
+    const cover = stacked(chapter.album!, covers[chapter.title])[0];
+    delete returns.current[chapter.title];
+    setViewing({ chapter, index: chapter.album!.indexOf(cover), from });
+    setAway([chapter.title]);
+  };
+
+  /** The photo showing becomes the Cover. */
+  const leaveAlbum = () => {
+    if (!viewing) return;
+    const { chapter, index } = viewing;
+    const cover = chapter.album![index].id;
+    setCovers((c) => ({ ...c, [chapter.title]: cover }));
+    lastAlbum.current = chapter;
+    return { chapter, cover };
   };
 
   const showPhoto = (index: number) => {
+    if (viewing) setViewing({ ...viewing, index });
+  };
+
+  // The Album left behind is back in its stack at once: it sank behind the blur, and nothing flies to it.
+  const moveAlbum = (by: number) => {
     if (!viewing) return;
-    setViewing({ ...viewing, index });
-    setAway(viewing.chapter.album![index].id);
+    leaveAlbum();
+    openAlbum(albumAfter(CHAPTERS, viewing.chapter, by));
   };
 
   const closeLightbox = () => {
-    if (!viewing) return;
-    setReturnTo(cardOnScreen(viewing.chapter.album![viewing.index]));
+    const left = leaveAlbum();
+    // Its Chapter is the one playing, so the cards fly back to the raised stack.
+    if (left) returns.current[left.chapter.title] = cardsAt(left.chapter, left.cover, true);
     setViewing(null);
   };
 
   const lightboxClosed = () => {
-    const photo = away;
-    setAway(null);
-    const chapter = CHAPTERS.find((c) => c.album?.some((p) => p.id === photo));
+    setAway([]);
+    const chapter = lastAlbum.current;
     // The dialog is still in the DOM, keeping the page inert, until the frame after its exit.
     if (chapter) requestAnimationFrame(() => document.querySelector<HTMLElement>(`[data-album="${chapter.title}"]`)?.focus());
   };
@@ -259,7 +278,7 @@ export default function App() {
       </div>
       {/* A phone has no room for them yet. */}
       {SHOW_LEGEND && !narrow && <Legend />}
-      {!narrow && <Albums chapters={CHAPTERS} active={story.chapter} away={away} onOpen={openAlbum} />}
+      {!narrow && <Albums chapters={CHAPTERS} active={story.chapter} covers={covers} away={away} onOpen={openAlbum} />}
       <Timeline
         activity={sim.activity}
         census={sim.swarm}
@@ -271,14 +290,19 @@ export default function App() {
         onScrubStart={() => (scrubbingRef.current = true)}
         onScrubEnd={() => (scrubbingRef.current = false)}
       />
-      <AnimatePresence custom={returnTo} onExitComplete={lightboxClosed}>
+      <AnimatePresence onExitComplete={lightboxClosed}>
         {viewing && (
           <Lightbox
             key="lightbox"
             chapter={viewing.chapter}
             index={viewing.index}
             from={viewing.from}
+            returns={returns}
+            previous={albumAfter(CHAPTERS, viewing.chapter, -1)}
+            next={albumAfter(CHAPTERS, viewing.chapter, 1)}
+            covers={covers}
             onIndex={showPhoto}
+            onMove={moveAlbum}
             onClose={closeLightbox}
           />
         )}
