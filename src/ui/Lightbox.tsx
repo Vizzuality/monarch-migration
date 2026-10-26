@@ -216,12 +216,15 @@ export function Lightbox({ chapter, index, from, returns, previous, next, covers
         animate={{ opacity: 1, transition: { duration: 0.4, delay: 0.25 } }}
         exit={{ opacity: 0, transition: { duration: 0.15 } }}
       >
-        {!alone && (
-          <>
-            <Neighbour chapter={previous} cover={covers[previous.title]} by={-1} onMove={onMove} />
-            <span className="lightbox-divider" />
-          </>
-        )}
+        {/* Each neighbour gets an equal side, so the current Album stays centred however long their names are. */}
+        <span className="lightbox-switcher-side">
+          {!alone && (
+            <>
+              <Neighbour chapter={previous} cover={covers[previous.title]} by={-1} onMove={onMove} />
+              <span className="lightbox-divider" />
+            </>
+          )}
+        </span>
         <span className="lightbox-album">
           <AnimatePresence mode="wait" initial={false}>
             <motion.span key={chapter.title} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
@@ -229,12 +232,14 @@ export function Lightbox({ chapter, index, from, returns, previous, next, covers
             </motion.span>
           </AnimatePresence>
         </span>
-        {!alone && (
-          <>
-            <span className="lightbox-divider" />
-            <Neighbour chapter={next} cover={covers[next.title]} by={1} onMove={onMove} />
-          </>
-        )}
+        <span className="lightbox-switcher-side next">
+          {!alone && (
+            <>
+              <span className="lightbox-divider" />
+              <Neighbour chapter={next} cover={covers[next.title]} by={1} onMove={onMove} />
+            </>
+          )}
+        </span>
       </motion.div>
 
       {photos.length > 1 && (

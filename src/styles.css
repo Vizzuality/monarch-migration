@@ -592,8 +592,8 @@ p {
   position: absolute;
   left: 0;
   right: 0;
-  display: flex;
-  justify-content: center;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
   gap: 28px;
   font-size: 12px;
@@ -601,6 +601,17 @@ p {
   letter-spacing: 0.48px;
   text-transform: uppercase;
   white-space: nowrap;
+}
+
+.lightbox-switcher-side {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 28px;
+}
+
+.lightbox-switcher-side.next {
+  justify-content: flex-start;
 }
 
 .lightbox-divider {
