@@ -40,3 +40,16 @@ export function chapterMiddle(chapters: Chapter[], index: number): number {
   const to = chapters[index + 1]?.from ?? YEAR_DAYS;
   return (chapters[index].from + to) / 2;
 }
+
+/** The Album `by` steps along the timeline from `chapter`'s, skipping Chapters without one and wrapping round the year. */
+export function albumAfter(chapters: Chapter[], chapter: Chapter, by: number): Chapter {
+  const withAlbum = chapters.filter((c) => c.album?.length);
+  const at = withAlbum.indexOf(chapter);
+  return withAlbum[(((at + by) % withAlbum.length) + withAlbum.length) % withAlbum.length];
+}
+
+/** An Album's photos as they lie in its stack: the Cover on top, the rest underneath in their own order. */
+export function stacked(album: Photo[], cover: string | undefined): Photo[] {
+  const top = album.find((p) => p.id === cover) ?? album[0];
+  return [top, ...album.filter((p) => p !== top)];
+}

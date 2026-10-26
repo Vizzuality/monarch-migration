@@ -449,12 +449,6 @@ p {
   filter: none;
 }
 
-/* Steps aside while a photo underneath is out in the Lightbox, and settles back on top once it has landed. */
-.album .card.covering {
-  filter: opacity(0);
-  transition-duration: 0.15s;
-}
-
 .card img {
   width: 100%;
   height: 100%;
@@ -492,8 +486,7 @@ p {
 
 .lightbox-stage {
   position: absolute;
-  inset: 0 0 var(--timeline-height);
-  overflow: hidden;
+  inset: 0;
   pointer-events: none;
 }
 
@@ -538,36 +531,6 @@ p {
   gap: 46px;
 }
 
-.lightbox-arrows {
-  display: flex;
-  gap: 8px;
-}
-
-.lightbox-arrows button {
-  width: 38px;
-  height: 38px;
-  padding: 0;
-  border: none;
-  border-radius: 50%;
-  background: none;
-  /* The blur in the Figma export only works inline, not through an <img>. */
-  backdrop-filter: blur(12.65px);
-  -webkit-backdrop-filter: blur(12.65px);
-}
-
-.lightbox-arrows button:focus-visible {
-  outline: 2px solid var(--cream);
-  outline-offset: 2px;
-}
-
-.lightbox-arrows img {
-  display: block;
-}
-
-.lightbox-arrows .flip {
-  transform: rotate(180deg);
-}
-
 .lightbox-caption h2 {
   font-family: var(--serif);
   font-weight: 300;
@@ -592,6 +555,157 @@ p {
   letter-spacing: 0.48px;
   text-transform: uppercase;
   color: rgba(228, 210, 186, 0.58);
+}
+
+.lightbox-strip-photo {
+  pointer-events: auto;
+  position: absolute;
+  overflow: hidden;
+  padding: 0;
+  border: 1px solid #000;
+  background: #000;
+  cursor: pointer;
+  outline: 2px solid transparent;
+  outline-offset: 3px;
+  transition: outline-color 0.2s;
+}
+
+.lightbox-strip-photo.marked {
+  outline-color: var(--cream);
+}
+
+.lightbox-strip-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  opacity: 0.55;
+  transition: opacity 0.2s;
+}
+
+.lightbox-strip-photo.marked img,
+.lightbox-strip-photo:hover img {
+  opacity: 1;
+}
+
+.lightbox-switcher {
+  position: absolute;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 28px;
+  font-size: 12px;
+  line-height: 1.28;
+  letter-spacing: 0.48px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.lightbox-divider {
+  width: 1px;
+  height: 20px;
+  background: rgba(228, 210, 186, 0.2);
+}
+
+.lightbox-neighbour {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 44px;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  color: rgba(228, 210, 186, 0.62);
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.lightbox-neighbour:hover,
+.lightbox-neighbour:focus-visible {
+  color: var(--cream);
+}
+
+.lightbox-neighbour:focus-visible {
+  outline: 2px solid var(--cream);
+  outline-offset: 4px;
+  border-radius: 8px;
+}
+
+.lightbox-neighbour-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.lightbox-neighbour-label.next {
+  flex-direction: row-reverse;
+}
+
+.lightbox-neighbour-label img {
+  width: 28px;
+  height: 28px;
+  object-fit: cover;
+  border: 1px solid #000;
+  border-radius: 7px;
+  box-sizing: border-box;
+  filter: grayscale(1) brightness(0.55);
+  transition: filter 0.4s;
+}
+
+.lightbox-neighbour:hover img,
+.lightbox-neighbour:focus-visible img {
+  filter: none;
+}
+
+.lightbox-album {
+  display: flex;
+  gap: 10px;
+}
+
+.lightbox-album-place {
+  color: rgba(228, 210, 186, 0.58);
+}
+
+.lightbox-arrows {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  translate: -50%;
+  /* It spans the Strip, which sits underneath it. */
+  pointer-events: none;
+}
+
+.lightbox-arrows button {
+  pointer-events: auto;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  cursor: pointer;
+  /* The blur in the Figma export only works inline, not through an <img>. */
+  backdrop-filter: blur(12.65px);
+  -webkit-backdrop-filter: blur(12.65px);
+}
+
+.lightbox-arrows button:focus-visible {
+  outline: 2px solid var(--cream);
+  outline-offset: 2px;
+}
+
+.lightbox-arrows img {
+  display: block;
+}
+
+.lightbox-arrows .flip {
+  transform: rotate(180deg);
 }
 
 .lightbox-hint {

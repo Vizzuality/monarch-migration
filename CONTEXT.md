@@ -13,8 +13,16 @@ A titled passage of the story that is active from its start day of the year unti
 _Avoid_: Step, section, slide
 
 **Album**:
-The photos that belong to a Chapter, pinned to the timeline halfway through it. While its Chapter is active the Album rises above the timeline at full contrast, with several photos fanned out as a loose stack of cards. The rest of the year it sinks behind the timeline, dimmed, with only its first photo peeking out. A Chapter may have no Album. Clicking any Album opens it in the Lightbox, after first moving the playhead into its Chapter if that Chapter wasn't active.
+The photos that belong to a Chapter, pinned to the timeline halfway through it. While its Chapter is active the Album rises above the timeline at full contrast, with several photos fanned out as a loose stack of cards. The rest of the year it sinks behind the timeline, dimmed, with only its Cover peeking out. A Chapter may have no Album. Clicking any Album opens it in the Lightbox on its Cover, after first moving the playhead into its Chapter if that Chapter wasn't active.
 _Avoid_: Gallery, step images, cards
+
+**Cover**:
+The photo on top of an Album's stack: the one that peeks out while the Album is sunk and the one the Lightbox opens on. It starts as the Album's first photo, and whichever photo is showing when the reader leaves the Album, by closing the Lightbox or moving to another Album, becomes the new Cover, with the others back underneath in their own order. Reloading the page puts every Album's first photo back on top.
+_Avoid_: Front photo, thumbnail, first card
+
+**Strip**:
+The row of small photos under the photo in the Lightbox, one for every photo in the Album, always in the Album's own order, with the one being shown marked. Clicking one shows it, and arrows either side of it step through the photos. Moving between photos only moves the mark; the Strip never reorders. Moving between Albums is a separate control, above the photo.
+_Avoid_: Thumbnails, carousel, filmstrip
 
 **Past**:
 The part of the timeline's bar and months behind the playhead right now. It looks switched off. Albums don't go Past; they follow their own Chapter. Scrubbing back brings days out of the Past again, and when the year loops back to 1 January nothing is Past.
@@ -33,7 +41,7 @@ The Generation with the most butterflies on a given day. Eggs and caterpillars d
 _Avoid_: Current generation, active generation
 
 **Lightbox**:
-The full-screen view of one Album, one photo at a time with its title and description, over the dimmed and blurred story. The story pauses while it is open. The photo tilts slightly towards the pointer, catching a glare like a glossy print.
+The full-screen view of one Album, one photo at a time with its title and description, over the dimmed and blurred story, with the Album's Strip beneath the photo. Opening it, the Cover grows into the photo while the Album's other cards fly down into the Strip; closing it, they all fly back into the stack. The reader can move straight to another Album from inside it, which moves the playhead to the start of that Album's Chapter. Albums follow each other in timeline order, skipping Chapters without one, and the last one leads back round to the first. Moving swaps the photo and the Strip in place, fading from one Album to the next; nothing flies to or from the timeline until the Lightbox closes, when the cards fly back into the stack of the Album showing then. The story pauses while it is open, and carries on from there once it closes. The photo tilts slightly towards the pointer, catching a glare like a glossy print.
 _Avoid_: Modal, gallery, viewer
 
 **Lineage**:
