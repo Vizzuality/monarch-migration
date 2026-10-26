@@ -663,12 +663,8 @@ p {
 }
 
 .lightbox-album {
-  display: flex;
-  gap: 10px;
-}
-
-.lightbox-album-place {
-  color: rgba(228, 210, 186, 0.58);
+  font-size: 15px;
+  letter-spacing: 0.6px;
 }
 
 .lightbox-arrows {

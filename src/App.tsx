@@ -44,7 +44,6 @@ const TILE_CACHE_SCREENS = 64;
 const DOWNLOAD_SHARE = 0.85;
 const PRELOAD_PARALLEL_IMAGES = 256;
 
-const ALBUMS = CHAPTERS.filter((c) => c.album?.length);
 const PHOTOS = CHAPTERS.flatMap((c) => c.album ?? []).flatMap((p) => [p.thumb, p.src]);
 // Holding on to them keeps them decoded, so a card never grows into the Lightbox half drawn.
 const decoded: HTMLImageElement[] = [];
@@ -302,8 +301,6 @@ export default function App() {
             previous={albumAfter(CHAPTERS, viewing.chapter, -1)}
             next={albumAfter(CHAPTERS, viewing.chapter, 1)}
             covers={covers}
-            place={ALBUMS.indexOf(viewing.chapter) + 1}
-            albums={ALBUMS.length}
             onIndex={showPhoto}
             onMove={moveAlbum}
             onClose={closeLightbox}

@@ -115,15 +115,12 @@ interface Props {
   previous: Chapter;
   next: Chapter;
   covers: Record<string, string>;
-  /** Where the Album is among all of them, from 1. */
-  place: number;
-  albums: number;
   onIndex: (index: number) => void;
   onMove: (by: number) => void;
   onClose: () => void;
 }
 
-export function Lightbox({ chapter, index, from, returns, previous, next, covers, place, albums, onIndex, onMove, onClose }: Props) {
+export function Lightbox({ chapter, index, from, returns, previous, next, covers, onIndex, onMove, onClose }: Props) {
   const photos = chapter.album!;
   const photo = photos[index];
   const dialog = useRef<HTMLDialogElement>(null);
@@ -231,11 +228,6 @@ export function Lightbox({ chapter, index, from, returns, previous, next, covers
               {chapter.title}
             </motion.span>
           </AnimatePresence>
-          {!alone && (
-            <span className="lightbox-album-place">
-              {place} / {albums}
-            </span>
-          )}
         </span>
         {!alone && (
           <>
