@@ -1,4 +1,5 @@
 import { motion, type Transition, type Variants } from 'motion/react';
+import { memo } from 'react';
 
 import { chapterMiddle, stacked, YEAR_DAYS, type Chapter, type Photo } from '../data/calendar';
 import { mulberry32 } from '../data/random';
@@ -101,7 +102,8 @@ interface Props {
   onOpen: (chapter: Chapter) => void;
 }
 
-export function Albums({ chapters, active, covers, away, onOpen }: Props) {
+// The page renders again whenever the day turns; the cards only need to when their own props change.
+export const Albums = memo(function Albums({ chapters, active, covers, away, onOpen }: Props) {
   return (
     <div className="albums">
       {chapters.map((chapter, i) => {
@@ -137,7 +139,7 @@ export function Albums({ chapters, active, covers, away, onOpen }: Props) {
       })}
     </div>
   );
-}
+});
 
 interface CardProps {
   photo: Photo;

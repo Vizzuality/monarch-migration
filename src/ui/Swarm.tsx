@@ -1,9 +1,10 @@
 import { useReducedMotion } from 'motion/react';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, type RefObject } from 'react';
 
 import { YEAR_DAYS } from '../data/calendar';
 import { mulberry32 } from '../data/random';
 import type { SwarmMember } from '../monarch/types';
+import { onFrame } from './frame-loop';
 
 // The trail runs this far ahead of the playhead, as tall as the space under the bar.
 const LENGTH = 160;
@@ -52,7 +53,8 @@ function scatter(members: SwarmMember[]): Dot[] {
 }
 
 interface Props {
-  day: number;
+  /** The playhead's day, read every frame rather than passed down on every render. */
+  dayRef: RefObject<number>;
   census: (day: number) => SwarmMember[];
 }
 
@@ -63,11 +65,9 @@ interface Props {
  * with the migration. Eggs and caterpillars are specks; butterflies vary in size.
  * It keeps flying while paused.
  */
-export function Swarm({ day, census }: Props) {
+export function Swarm({ dayRef, census }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const wrapRef = useRef<HTMLCanvasElement>(null);
-  const dayRef = useRef(day);
-  dayRef.current = day;
   const reduced = useReducedMotion();
 
   useEffect(() => {
@@ -78,9 +78,11 @@ export function Swarm({ day, census }: Props) {
     if (!canvas || !ctx || !wrap || !wrapCtx) return;
     const dots = scatter(census(dayRef.current));
 
-    let frame = requestAnimationFrame(function paint(now) {
-      frame = requestAnimationFrame(paint);
+    return onFrame((now) => {
       const clock = now / 1000;
+      const at = dayRef.current / YEAR_DAYS;
+      canvas.style.left = `${at * 100}%`;
+      wrap.style.left = `${(at - 1) * 100}%`;
       const dpr = devicePixelRatio;
       const w = Math.round(canvas.clientWidth * dpr);
       const h = Math.round(canvas.clientHeight * dpr);
@@ -129,14 +131,13 @@ export function Swarm({ day, census }: Props) {
       wrapCtx.clearRect(0, 0, w, h);
       wrapCtx.drawImage(canvas, 0, 0);
     });
-    return () => cancelAnimationFrame(frame);
-  }, [census, reduced]);
+  }, [census, dayRef, reduced]);
 
   return (
     <div className="swarm" aria-hidden="true">
-      <canvas ref={canvasRef} style={{ left: `${(day / YEAR_DAYS) * 100}%`, width: LENGTH }} />
+      <canvas ref={canvasRef} style={{ width: LENGTH }} />
       {/* The same trail a whole year back, so what runs past December carries on into January. */}
-      <canvas ref={wrapRef} style={{ left: `${(day / YEAR_DAYS - 1) * 100}%`, width: LENGTH }} />
+      <canvas ref={wrapRef} style={{ width: LENGTH }} />
     </div>
   );
 }

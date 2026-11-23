@@ -1,6 +1,7 @@
 import { createContext, memo, useContext, useEffect, useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
 
 import { Butterfly, FEET_X, flap } from './Butterfly';
+import { onFrame } from './frame-loop';
 import { useFlight, type Bird, type Body, type Flight, type Pose } from './Flock';
 import { flickScale, flyingScale, perchedScale } from './wings';
 
@@ -134,8 +135,7 @@ export function FlockCanvas({
     if (!sprites || !canvas || !ctx) return;
     const { width, height } = sprites;
     const feet = FEET_X * width;
-    let frame = requestAnimationFrame(function paint() {
-      frame = requestAnimationFrame(paint);
+    return onFrame(() => {
       const dpr = devicePixelRatio;
       const w = Math.round(canvas.clientWidth * dpr);
       const h = Math.round(canvas.clientHeight * dpr);
@@ -171,7 +171,6 @@ export function FlockCanvas({
         ctx.drawImage(sprite, (-PAD - feet) * k, 1 - (height + PAD) * k, (width + 2 * PAD) * k, (height + 2 * PAD) * k);
       }
     });
-    return () => cancelAnimationFrame(frame);
   }, [sprites, origin, painting]);
 
   return (

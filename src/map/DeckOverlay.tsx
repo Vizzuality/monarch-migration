@@ -1,5 +1,6 @@
-import { MapboxOverlay, type MapboxOverlayProps } from '@deck.gl/mapbox';
+import { MapboxOverlay } from '@deck.gl/mapbox';
 import type { Map as MaplibreMap } from 'maplibre-gl';
+import type { RefObject } from 'react';
 import { useControl } from 'react-map-gl/maplibre';
 
 // MapLibre 6 moved `map.transform` onto an internal camera, but deck.gl 9.4
@@ -12,11 +13,11 @@ function shimTransform(map: MaplibreMap) {
   });
 }
 
-export function DeckOverlay(props: MapboxOverlayProps) {
-  const overlay = useControl(({ map }) => {
+/** Hands the overlay to `overlayRef`, so the frame loop can give it new layers without a render. */
+export function DeckOverlay({ overlayRef }: { overlayRef: RefObject<MapboxOverlay | null> }) {
+  overlayRef.current = useControl(({ map }) => {
     shimTransform(map.getMap());
-    return new MapboxOverlay(props);
+    return new MapboxOverlay({ layers: [] });
   });
-  overlay.setProps(props);
   return null;
 }
