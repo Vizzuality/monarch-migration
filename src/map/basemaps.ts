@@ -2,7 +2,11 @@ import { addProtocol, type RasterDEMSourceSpecification, type StyleSpecification
 
 import { stashed } from './tile-stash';
 
-const IMAGERY_TILES = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+// Two hosts for the same tiles: Esri serves them over HTTP/1.1, where the browser opens
+// only 6 connections per host, and the preload fetches several hundred.
+const IMAGERY_TILES = ['server', 'services'].map(
+  (host) => `https://${host}.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}`,
+);
 
 /** Esri's terms ask for its imagery providers on screen, next to "Powered by Esri". */
 export const IMAGERY_ATTRIBUTION = 'Esri, Maxar, Earthstar Geographics, and the GIS User Community';
@@ -41,7 +45,7 @@ export const MAP_STYLE: StyleSpecification = {
   sources: {
     'esri-imagery': {
       type: 'raster',
-      tiles: [stashed(IMAGERY_TILES)],
+      tiles: IMAGERY_TILES.map(stashed),
       tileSize: 256,
       maxzoom: 19,
       attribution: IMAGERY_ATTRIBUTION,

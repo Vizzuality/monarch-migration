@@ -4,7 +4,9 @@ import { YEAR_DAYS } from '../data/calendar';
 import { PINNED_SOURCES } from './basemaps';
 import type { Camera } from './camera';
 
-const SCAN_STEP = 0.1; // days
+// In days. The camera moves slowly enough that 0.5 finds the same tiles as 0.1 at
+// phone, laptop and 1080p sizes, in a fifth of the time; 1 starts missing some.
+const SCAN_STEP = 0.5;
 
 /** Makes every pinned source draw its one zoom, near the camera or on the horizon. */
 export function pinTileZoom(map: MaplibreMap) {
@@ -96,8 +98,13 @@ interface Transform {
   setElevation(e: number): void;
 };
 
-const tileUrl = (template: string, { canonical: { z, x, y } }: OverscaledTileID) =>
-  template.replace('{z}', String(z)).replace('{x}', String(x)).replace('{y}', String(y));
+// Picks the host the way MapLibre does for a source with several urls, so the stashed
+// url is the one the map asks for.
+const tileUrl = (templates: string[], { canonical: { z, x, y } }: OverscaledTileID) =>
+  templates[(x + y) % templates.length]
+    .replace('{z}', String(z))
+    .replace('{x}', String(x))
+    .replace('{y}', String(y));
 
 const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
 
