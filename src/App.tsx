@@ -44,20 +44,24 @@ const TILE_CACHE_SCREENS = 64;
 const DOWNLOAD_SHARE = 0.85;
 const PRELOAD_PARALLEL_IMAGES = 256;
 
-const PHOTOS = CHAPTERS.flatMap((c) => c.album ?? []).flatMap((p) => [p.thumb, p.src]);
+const ALBUM_PHOTOS = CHAPTERS.flatMap((c) => c.album ?? []);
+// The cards need their thumbs from the first frame. The full photos outweigh every map tile
+// together, so they wait until the story is playing rather than hold up the loader.
+const THUMBS = ALBUM_PHOTOS.map((p) => p.thumb);
+const FULL_PHOTOS = ALBUM_PHOTOS.map((p) => p.src);
 // Holding on to them keeps them decoded, so a card never grows into the Lightbox half drawn.
 const decoded: HTMLImageElement[] = [];
 
-async function loadPhotos(onProgress: (done: number) => void) {
+async function loadPhotos(urls: string[], onProgress?: (done: number) => void) {
   let done = 0;
   await Promise.all(
-    PHOTOS.map(async (url) => {
+    urls.map(async (url) => {
       const img = new Image();
       img.src = url;
       decoded.push(img);
       // A photo that fails just shows up late, like a tile.
       await img.decode().catch(() => {});
-      onProgress(++done);
+      onProgress?.(++done);
     }),
   );
 }
@@ -163,8 +167,8 @@ export default function App() {
     const { samples, urls } = pathTiles(map, framedAt, padding, START_DAY);
     let tiles = 0;
     let photos = 0;
-    const downloaded = () => setProgress((DOWNLOAD_SHARE * (tiles + photos)) / (urls.length + PHOTOS.length));
-    const photosLoaded = loadPhotos((done) => ((photos = done), downloaded()));
+    const downloaded = () => setProgress((DOWNLOAD_SHARE * (tiles + photos)) / (urls.length + THUMBS.length));
+    const photosLoaded = loadPhotos(THUMBS, (done) => ((photos = done), downloaded()));
     // Downloading first lets the walk below run at decode speed instead of network latency.
     await stashTiles(urls, (done) => ((tiles = done), downloaded()));
     await photosLoaded;
@@ -191,6 +195,7 @@ export default function App() {
     if (stale()) return;
     setProgress(1);
     setLoading(false);
+    void loadPhotos(FULL_PHOTOS);
   }, []);
 
   const openAlbum = (chapter: Chapter) => {
