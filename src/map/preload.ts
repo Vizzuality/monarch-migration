@@ -98,8 +98,13 @@ interface Transform {
   setElevation(e: number): void;
 };
 
-const tileUrl = (template: string, { canonical: { z, x, y } }: OverscaledTileID) =>
-  template.replace('{z}', String(z)).replace('{x}', String(x)).replace('{y}', String(y));
+// Picks the host the way MapLibre does for a source with several urls, so the stashed
+// url is the one the map asks for.
+const tileUrl = (templates: string[], { canonical: { z, x, y } }: OverscaledTileID) =>
+  templates[(x + y) % templates.length]
+    .replace('{z}', String(z))
+    .replace('{x}', String(x))
+    .replace('{y}', String(y));
 
 const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
 

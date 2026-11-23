@@ -2,7 +2,11 @@ import { addProtocol, type RasterDEMSourceSpecification, type StyleSpecification
 
 import { stashed } from './tile-stash';
 
-const IMAGERY_TILES = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+// Two hosts for the same tiles: Esri serves them over HTTP/1.1, where the browser opens
+// only 6 connections per host, and the preload fetches several hundred.
+const IMAGERY_TILES = ['server', 'services'].map(
+  (host) => `https://${host}.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}`,
+);
 
 /**
  * Every source draws tiles of one zoom whatever the camera does, so the whole
@@ -38,7 +42,7 @@ export const MAP_STYLE: StyleSpecification = {
   sources: {
     'esri-imagery': {
       type: 'raster',
-      tiles: [stashed(IMAGERY_TILES)],
+      tiles: IMAGERY_TILES.map(stashed),
       tileSize: 256,
       maxzoom: 19,
       attribution: 'Esri, Maxar, Earthstar Geographics, and the GIS User Community',
