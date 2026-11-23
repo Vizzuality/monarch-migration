@@ -1,3 +1,4 @@
+import type { MapboxOverlay } from '@deck.gl/mapbox';
 import { AnimatePresence } from 'motion/react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { getMaxParallelImageRequests, setMaxParallelImageRequests } from 'maplibre-gl';
@@ -21,6 +22,7 @@ import { ChapterText } from './ui/ChapterText';
 import { DayReadout } from './ui/DayReadout';
 import { Legend } from './ui/Legend';
 import { Lightbox, type Returns } from './ui/Lightbox';
+import { useFrame } from './ui/frame-loop';
 import { Loader } from './ui/Loader';
 import { isNarrow, useNarrow } from './ui/narrow';
 import { Timeline } from './ui/Timeline';
@@ -70,6 +72,10 @@ interface Viewing {
 
 const sim = buildModel();
 const cameraAt = cameraPath(KEYFRAMES);
+const framedCamera = (day: number, zoomBoost: number) => {
+  const cam = cameraAt(day);
+  return { ...cam, zoom: cam.zoom + zoomBoost };
+};
 
 function framing() {
   const { innerWidth: width, innerHeight: height } = window;
@@ -79,15 +85,22 @@ function framing() {
 }
 
 export default function App() {
-  const [day, setDay] = useState(START_DAY);
-  const story = storyAt(sim.activity, day);
-  const [clock, setClock] = useState(0);
+  // The playhead moves every frame, so it lives outside React: the frame loop hands it to the map,
+  // the trails and the timeline. React only hears about the whole day, which is all the rest shows.
+  const dayRef = useRef(START_DAY);
+  const [today, setToday] = useState(Math.floor(START_DAY));
+  const setDay = useCallback((d: number) => {
+    dayRef.current = ((d % YEAR_DAYS) + YEAR_DAYS) % YEAR_DAYS;
+    setToday(Math.floor(dayRef.current));
+  }, []);
+  const story = storyAt(sim.activity, today);
   const [playing, setPlaying] = useState(true);
-  // While loading, the camera walks the path instead of following `day`.
+  // While loading, the camera walks the path instead of following the playhead.
   const [loading, setLoading] = useState(true);
   const [progress, setProgress] = useState(0);
-  const [previewDay, setPreviewDay] = useState(START_DAY);
+  const previewRef = useRef(START_DAY);
   const [{ padding, zoomBoost }, setFraming] = useState(framing);
+  const [initialView] = useState(() => ({ ...framedCamera(START_DAY, zoomBoost), padding }));
   const narrow = useNarrow();
   const [viewing, setViewing] = useState<Viewing | null>(null);
   // Only for this visit: a reload puts every Album's first photo back on top.
@@ -106,24 +119,32 @@ export default function App() {
   viewingRef.current = viewing;
   framingRef.current = { padding, zoomBoost };
   const mapRef = useRef<MapRef>(null);
+  const overlayRef = useRef<MapboxOverlay | null>(null);
   const preloadRun = useRef(0);
+  const lastFrame = useRef(performance.now());
 
-  useEffect(() => {
-    let raf = 0;
-    let last = performance.now();
-    const tick = (now: number) => {
-      const dt = Math.min(0.1, (now - last) / 1000);
-      last = now;
+  const applyCamera = () => {
+    const { padding, zoomBoost } = framingRef.current;
+    const cam = framedCamera(loadingRef.current ? previewRef.current : dayRef.current, zoomBoost);
+    mapRef.current?.getMap().jumpTo({ center: [cam.longitude, cam.latitude], zoom: cam.zoom, pitch: cam.pitch, bearing: cam.bearing, padding });
+  };
+
+  useFrame(
+    (now) => {
+      const dt = Math.min(0.1, (now - lastFrame.current) / 1000);
+      lastFrame.current = now;
       // Pausing for the Lightbox leaves `playing` alone, so closing it picks up where the reader left off.
       if (playingRef.current && !scrubbingRef.current && !loadingRef.current && !viewingRef.current) {
-        setDay((d) => (d + dt * DAYS_PER_SECOND) % YEAR_DAYS);
+        setDay(dayRef.current + dt * DAYS_PER_SECOND);
       }
-      setClock(now / 1000);
-      raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, []);
+      applyCamera();
+      const day = dayRef.current;
+      // Nothing to see under the loader, so spare it the trails.
+      const layers = loadingRef.current ? [] : buildLayers({ sim, frame: sim.frame(day, now / 1000), day, zoom: cameraAt(day).zoom });
+      overlayRef.current?.setProps({ layers });
+    },
+    { early: true },
+  );
 
   useEffect(() => {
     const onResize = () => setFraming(framing());
@@ -139,12 +160,12 @@ export default function App() {
       if (e.code === 'Space') {
         e.preventDefault();
         togglePlay();
-      } else if (e.code === 'ArrowRight') setDay((d) => (d + 7) % YEAR_DAYS);
-      else if (e.code === 'ArrowLeft') setDay((d) => (d - 7 + YEAR_DAYS) % YEAR_DAYS);
+      } else if (e.code === 'ArrowRight') setDay(dayRef.current + 7);
+      else if (e.code === 'ArrowLeft') setDay(dayRef.current - 7);
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [togglePlay]);
+  }, [togglePlay, setDay]);
 
   const preload = useCallback(async () => {
     const map = mapRef.current?.getMap();
@@ -156,11 +177,7 @@ export default function App() {
 
     pinTileZoom(map);
     const { padding, zoomBoost } = framingRef.current;
-    const framedAt = (d: number) => {
-      const cam = cameraAt(d);
-      return { ...cam, zoom: cam.zoom + zoomBoost };
-    };
-    const { samples, urls } = pathTiles(map, framedAt, padding, START_DAY);
+    const { samples, urls } = pathTiles(map, (d) => framedCamera(d, zoomBoost), padding, START_DAY);
     let tiles = 0;
     let photos = 0;
     const downloaded = () => setProgress((DOWNLOAD_SHARE * (tiles + photos)) / (urls.length + PHOTOS.length));
@@ -177,7 +194,8 @@ export default function App() {
     setMaxParallelImageRequests(PRELOAD_PARALLEL_IMAGES);
     try {
       for (const [i, sample] of samples.entries()) {
-        setPreviewDay(sample);
+        previewRef.current = sample;
+        applyCamera();
         await tilesSettled(map, SAMPLE_TIMEOUT_MS);
         if (stale()) return;
         setProgress(DOWNLOAD_SHARE + ((1 - DOWNLOAD_SHARE) * (i + 1)) / samples.length);
@@ -185,7 +203,8 @@ export default function App() {
     } finally {
       setMaxParallelImageRequests(parallel);
     }
-    setPreviewDay(START_DAY);
+    previewRef.current = START_DAY;
+    applyCamera();
     await tilesSettled(map, SAMPLE_TIMEOUT_MS);
     await document.fonts.ready;
     if (stale()) return;
@@ -232,6 +251,11 @@ export default function App() {
     setViewing(null);
   };
 
+  // Stable, so the memoised Albums skip the renders where only the day changed.
+  const openAlbumRef = useRef(openAlbum);
+  openAlbumRef.current = openAlbum;
+  const onOpenAlbum = useCallback((chapter: Chapter) => openAlbumRef.current(chapter), []);
+
   const lightboxClosed = () => {
     setAway([]);
     const chapter = lastAlbum.current;
@@ -239,22 +263,14 @@ export default function App() {
     if (chapter) requestAnimationFrame(() => document.querySelector<HTMLElement>(`[data-album="${chapter.title}"]`)?.focus());
   };
 
-  const shot = cameraAt(loading ? previewDay : day);
-  const camera = { ...shot, zoom: shot.zoom + zoomBoost };
-
   // MapLibre reparses GeoJSON on a worker, so refresh the hotspots once per day, not per frame.
   const hotspots = useMemo(() => sim.hotspots(story.today + 0.5), [story.today]);
-
-  const frame = sim.frame(day, clock);
-  // Nothing to see under the loader, so spare it the trails.
-  const layers = loading ? [] : buildLayers({ sim, frame, day, zoom: shot.zoom });
 
   return (
     <div className="app">
       <Map
         ref={mapRef}
-        {...camera}
-        padding={padding}
+        initialViewState={initialView}
         interactive={false}
         mapStyle={MAP_STYLE}
         maxPitch={70}
@@ -269,7 +285,7 @@ export default function App() {
         <Source id="hotspots" type="geojson" data={hotspots}>
           <Layer id="hotspots-heatmap" type="heatmap" paint={HOTSPOT_PAINT} />
         </Source>
-        <DeckOverlay layers={layers} />
+        <DeckOverlay overlayRef={overlayRef} />
       </Map>
       <div className="vignette" />
       <img className="logo" src={logo} width="107.484" height="24.0381" alt="Vizzuality" />
@@ -284,11 +300,11 @@ export default function App() {
       </div>
       {/* A phone has no room for them yet. */}
       {SHOW_LEGEND && !narrow && <Legend />}
-      {!narrow && <Albums chapters={CHAPTERS} active={story.chapter} covers={covers} away={away} onOpen={openAlbum} />}
+      {!narrow && <Albums chapters={CHAPTERS} active={story.chapter} covers={covers} away={away} onOpen={onOpenAlbum} />}
       <Timeline
         activity={sim.activity}
         census={sim.swarm}
-        day={day}
+        dayRef={dayRef}
         story={story}
         playing={playing}
         onTogglePlay={togglePlay}

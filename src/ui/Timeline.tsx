@@ -1,9 +1,10 @@
 import { motion, useReducedMotion } from 'motion/react';
-import { useMemo, useRef, type CSSProperties } from 'react';
+import { useMemo, useRef, type RefObject } from 'react';
 
 import { MONTH_LENGTHS, MONTHS, YEAR_DAYS } from '../data/calendar';
 import type { StoryDay } from '../monarch/story';
 import type { Activity, SwarmMember } from '../monarch/types';
+import { useFrame } from './frame-loop';
 import { useNarrow } from './narrow';
 import { Swarm } from './Swarm';
 import { barShape } from './timeline-bar';
@@ -11,7 +12,8 @@ import { barShape } from './timeline-bar';
 interface Props {
   activity: Activity;
   census: (day: number) => SwarmMember[];
-  day: number;
+  /** The playhead's day, which moves every frame; `story` only changes with the whole day. */
+  dayRef: RefObject<number>;
   story: StoryDay;
   playing: boolean;
   onTogglePlay: () => void;
@@ -42,11 +44,18 @@ function PlayPauseIcon({ playing }: { playing: boolean }) {
   );
 }
 
-export function Timeline({ activity, census, day, story, playing, onTogglePlay, onScrub, onScrubStart, onScrubEnd }: Props) {
+export function Timeline({ activity, census, dayRef, story, playing, onTogglePlay, onScrub, onScrubStart, onScrubEnd }: Props) {
   const bar = useMemo(() => barShape(activity), [activity]);
   // A phone gets a bare bar: the same colors, without the thinning, the months or the Swarm.
   const narrow = useNarrow();
   const trackRef = useRef<HTMLDivElement>(null);
+  const playheadRef = useRef<HTMLDivElement>(null);
+
+  useFrame(() => {
+    const at = `${(dayRef.current / YEAR_DAYS) * 100}%`;
+    trackRef.current?.style.setProperty('--past', at);
+    if (playheadRef.current) playheadRef.current.style.left = at;
+  });
 
   const scrubTo = (clientX: number) => {
     const rect = trackRef.current?.getBoundingClientRect();
@@ -68,7 +77,6 @@ export function Timeline({ activity, census, day, story, playing, onTogglePlay, 
       <div
         className="track"
         ref={trackRef}
-        style={{ '--past': `${(day / YEAR_DAYS) * 100}%` } as CSSProperties}
         role="slider"
         aria-label="Day of the year"
         aria-valuemin={0}
@@ -107,12 +115,12 @@ export function Timeline({ activity, census, day, story, playing, onTogglePlay, 
                 </span>
               ))}
             </div>
-            <Swarm day={day} census={census} />
+            <Swarm dayRef={dayRef} census={census} />
           </>
         )}
         <motion.div
+          ref={playheadRef}
           className="playhead"
-          style={{ left: `${(day / YEAR_DAYS) * 100}%` }}
           initial={false}
           animate={{ color }}
           transition={{ duration: 0.4 }}
