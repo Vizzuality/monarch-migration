@@ -4,6 +4,9 @@ import { stashed } from './tile-stash';
 
 const IMAGERY_TILES = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
 
+/** Esri's terms ask for its imagery providers on screen, next to "Powered by Esri". */
+export const IMAGERY_ATTRIBUTION = 'Esri, Maxar, Earthstar Geographics, and the GIS User Community';
+
 /**
  * Every source draws tiles of one zoom whatever the camera does, so the whole
  * year's tiles can be loaded before the story starts and none change on screen.
@@ -41,7 +44,7 @@ export const MAP_STYLE: StyleSpecification = {
       tiles: [stashed(IMAGERY_TILES)],
       tileSize: 256,
       maxzoom: 19,
-      attribution: 'Esri, Maxar, Earthstar Geographics, and the GIS User Community',
+      attribution: IMAGERY_ATTRIBUTION,
     },
     'flat-dem': FLAT_DEM,
   },
