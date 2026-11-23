@@ -947,6 +947,12 @@ p {
     bottom: 12px;
   }
 
+  .logo {
+    top: 16px;
+    left: 16px;
+    transform: none;
+  }
+
   /* At full size it would stand almost as tall as the title, which is at its smallest here. */
   .readout-generation {
     font-size: 24px;
