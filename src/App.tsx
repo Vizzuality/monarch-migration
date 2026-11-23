@@ -7,7 +7,7 @@ import './map/maplibre-worker';
 
 import logo from './assets/vizzuality.svg';
 import { albumAfter, stacked, YEAR_DAYS, type Chapter } from './data/calendar';
-import { MAP_STYLE } from './map/basemaps';
+import { IMAGERY_ATTRIBUTION, MAP_STYLE } from './map/basemaps';
 import { cameraPath, framingBoost } from './map/camera';
 import { DeckOverlay } from './map/DeckOverlay';
 import { buildLayers } from './map/layers';
@@ -260,6 +260,7 @@ export default function App() {
         maxPitch={70}
         maxTileCacheZoomLevels={TILE_CACHE_SCREENS}
         onLoad={preload}
+        // Drawn by us in the top right corner instead, in the story's type.
         attributionControl={false}
         // deck.gl draws into maplibre's control corner, which is lifted with a z-index; isolating the map keeps
         // that lift inside it, so labels and trails stay under the timeline.
@@ -272,6 +273,11 @@ export default function App() {
       </Map>
       <div className="vignette" />
       <img className="logo" src={logo} width="107.484" height="24.0381" alt="Vizzuality" />
+      <p className="attribution">
+        Powered by <a href="https://www.esri.com" target="_blank" rel="noreferrer">Esri</a>
+        <br />
+        {IMAGERY_ATTRIBUTION}
+      </p>
       <div className="story">
         <ChapterText chapter={story.chapter} />
         <DayReadout story={story} />
